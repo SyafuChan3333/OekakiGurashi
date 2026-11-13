@@ -1,10 +1,11 @@
-// テスト用の小さな静的サーバー（依存なし）。単体で動かすと、ブラウザで確認できる：node tests/server.mjs → http://localhost:8765/
+// テスト用の小さな静的サーバー（依存なし）。public/ を配信する。単体で動かすと、ブラウザで確認できる：node tests/server.mjs → http://localhost:8765/
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// 配信するのは public/ だけ（GitHub Pages と同じ）
+const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
 
 export function startServer(port = 0) {

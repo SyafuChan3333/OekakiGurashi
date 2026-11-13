@@ -1,6 +1,6 @@
 // ゲームのルール（js/store.js）を、ブラウザなしで確かめる
 globalThis.localStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
-const S = await import('../js/store.js');
+const S = await import('../public/js/store.js');
 const results = [];
 const check = (name, ok, detail = '') => { results.push(ok); console.log(`${ok ? 'ok  ' : 'NG  '} ${name}${detail ? ' — ' + detail : ''}`); };
 
