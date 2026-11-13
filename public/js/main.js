@@ -414,13 +414,13 @@ function startFlow() {
   // 1. 絵を用意する。続きから遊ぶ人の入口もここ
   const step1 = async () => {
     const r = await drawFlow({
-      title: '相棒をむかえよう', gallery: PEN_COMPANIONS, closable: !!pic,
+      title: '相棒をむかえよう', gallery: PEN_COMPANIONS, closable: false, // はじめかたの途中では閉じるを出さない
       note: 'まずは相棒の絵を用意しよう。描いた絵が、そのままおへやで暮らします。',
-      extra: pic ? '' : '<button class="btn wide" data-act="import">セーブを読み込んで続きから</button>',
-      onExtra: a => { if (a === 'import') importSave(() => step1()); },
+      extra: pic ? '<button class="btn wide" data-act="back">確認にもどる</button>' : '<button class="btn wide" data-act="import">セーブを読み込んで続きから</button>',
+      onExtra: a => { if (a === 'import') importSave(() => step1()); if (a === 'back') step3(); },
     });
-    if (r === undefined) return; // セーブの読み込みへ
-    if (!r) return pic ? step3() : step1(); // 途中でやめた：用意しなおしの途中なら確認へ戻る
+    if (r === undefined) return; // セーブの読み込み・確認にもどる
+    if (!r) return pic ? step3() : step1(); // お絵かきを「やめる」：用意しなおしの途中なら確認へ戻る
     pic = r;
     name ? step3() : step2();
   };
