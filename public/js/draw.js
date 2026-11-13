@@ -8,7 +8,8 @@ const COLORS = ['#3a302a', '#ffffff', '#e2603f', '#f1c45a', '#7fae6a', '#5f8fc4'
 const SIZES = [4, 10, 22];
 
 // 2択のポップアップ → 結果 { image, self } または null
-// closable：最初の画面に「閉じる」を出すか。extra：最初の画面の下に足すボタン（data-act は onExtra で受ける）
+// closable：途中の画面に「閉じる」を出すか（はじめかたでは出さない。戻るボタンで行き来する）
+// extra：最初の画面の下に足すボタン（data-act は onExtra で受ける）
 export function drawFlow({ title, gallery = [], base = null, note = '', closable = true, extra = '', onExtra = null }) {
   return new Promise(resolve => {
     const done = v => { closeModal(); resolve(v); };
@@ -34,7 +35,7 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         <h2>どれを描いてもらう？</h2>
         <div class="pen-grid">${gallery.map((g, i) => `<button class="pen-item" data-act="pick" data-i="${i}"><img src="${g.src}" alt="" draggable="false"><span>${esc(g.name)}</span></button>`).join('')}</div>
         <button class="btn" data-act="back">もどる</button>`, {
-        wide: true,
+        wide: true, closable,
         onAct: (act, el) => {
           if (act === 'close') return resolve(null);
           if (act === 'back') return choose();
@@ -53,11 +54,14 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
           <h2>${esc(g.name)}</h2>
           <div class="paper"><img class="fadein" src="${g.src}" alt="" draggable="false"></div>
           <div class="row-end">
+            <button class="btn" data-act="back">ほかの絵にする</button>
             <button class="btn" data-act="redraw">自分で描き直す</button>
-            <button class="btn primary" data-act="ok">これにする</button>
-          </div>`, {
+          </div>
+          <button class="btn primary wide" data-act="ok">これにする</button>`, {
+          closable,
           onAct: async act => {
             if (act === 'close') return resolve(null);
+            if (act === 'back') return pickPen();
             if (act === 'ok') done({ image: g.src, self: false, name: g.name, pen: g });
             if (act === 'redraw') { closeModal(); const img = await openEditor({ title, base: g.src }); resolve(img ? { image: img, self: true } : null); }
           },

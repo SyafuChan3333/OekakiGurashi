@@ -14,7 +14,13 @@ try {
   check(r, '名前の画面に、用意した絵が出ている', await page.locator('.sheet .paper img').count() && await page.locator('#pet-name').count());
   await page.fill('#pet-name', 'しろ'); await page.click('[data-id="curious"]'); await page.click('[data-act="next"]');
   check(r, '確認画面が出る', (await page.textContent('.sheet h2')).includes('この子でいい'));
-  await page.click('[data-act="pic"]'); await page.click('[data-act="pen"]'); await page.click('[data-act="pick"][data-i="5"]');
+  await page.click('[data-act="pic"]');
+  check(r, 'はじめかたの途中では閉じるボタンが出ない', !(await page.locator('.sheet-close').count()));
+  await page.click('[data-act="back"]');
+  check(r, '「確認にもどる」で確認画面に戻る', (await page.textContent('.sheet h2')).includes('この子でいい'));
+  await page.click('[data-act="pic"]'); await page.click('[data-act="pen"]');
+  check(r, '魔法のペンの絵を選ぶ画面にも閉じるボタンが出ない', !(await page.locator('.sheet-close').count()));
+  await page.click('[data-act="pick"][data-i="5"]');
   await page.waitForSelector('[data-act="ok"]', { timeout: 5000 }); await page.click('[data-act="ok"]');
   check(r, '絵を用意しなおすと、名前を残したまま確認に戻る', (await page.textContent('.sheet')).includes('しろ'));
   await page.click('[data-act="go"]'); await page.waitForSelector('#pet-card');
