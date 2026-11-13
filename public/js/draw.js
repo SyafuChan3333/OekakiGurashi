@@ -8,7 +8,8 @@ const COLORS = ['#3a302a', '#ffffff', '#e2603f', '#f1c45a', '#7fae6a', '#5f8fc4'
 const SIZES = [4, 10, 22];
 
 // 2択のポップアップ → 結果 { image, self } または null
-export function drawFlow({ title, gallery = [], base = null, note = '' }) {
+// closable：最初の画面に「閉じる」を出すか。extra：最初の画面の下に足すボタン（data-act は onExtra で受ける）
+export function drawFlow({ title, gallery = [], base = null, note = '', closable = true, extra = '', onExtra = null }) {
   return new Promise(resolve => {
     const done = v => { closeModal(); resolve(v); };
     const choose = () => {
@@ -18,9 +19,11 @@ export function drawFlow({ title, gallery = [], base = null, note = '' }) {
         <div class="two-choice">
           <button class="choice dark" data-act="self">${icon('pen', 44)}<b>自分で描く</b><small>描いたものには、いいことがあります</small></button>
           ${gallery.length ? `<button class="choice" data-act="pen">${icon('magic', 44)}<b>魔法のペンにおまかせ</b><small>あとから描き直せます</small></button>` : ''}
-        </div>`, {
+        </div>${extra}`, {
+        closable,
         onAct: async act => {
           if (act === 'close') return resolve(null);
+          if (onExtra && act !== 'self' && act !== 'pen') { closeModal(); onExtra(act); return resolve(undefined); }
           if (act === 'self') { closeModal(); const img = await openEditor({ title, base }); resolve(img ? { image: img, self: true } : null); }
           if (act === 'pen') pickPen();
         },

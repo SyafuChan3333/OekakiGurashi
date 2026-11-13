@@ -1,13 +1,23 @@
 // 通しプレイ：起動 → 相棒を迎える → おへや → カフェで1人に出す → コンビニ → 設定（セーブ）→ ハラハラの出来事
-import { open, passSplash, createPet, check, finish, OUT } from './helpers.mjs';
+import { open, passSplash, check, finish, OUT } from './helpers.mjs';
 
 const { page, errors, close } = await open({ query: '?debug' });
 const r = [];
 const wait = ms => page.waitForTimeout(ms);
 try {
   await passSplash(page);
-  check(r, '起動画面をタップで抜けると、はじめかたが出る', await page.locator('#pet-name').count());
-  await createPet(page);
+  check(r, '起動画面をタップで抜けると、まず絵を用意する画面が出る', await page.locator('[data-act="pen"]').count() && !(await page.locator('#pet-name').count()));
+  check(r, '最初の画面から続きを読み込める', await page.locator('[data-act="import"]').count());
+  // 絵 → 名前と性格（絵が出ている）→ 確認 →「絵を用意しなおす」でも名前は残る
+  await page.click('[data-act="pen"]'); await page.click('[data-act="pick"][data-i="3"]');
+  await page.waitForSelector('[data-act="ok"]', { timeout: 5000 }); await page.click('[data-act="ok"]');
+  check(r, '名前の画面に、用意した絵が出ている', await page.locator('.sheet .paper img').count() && await page.locator('#pet-name').count());
+  await page.fill('#pet-name', 'しろ'); await page.click('[data-id="curious"]'); await page.click('[data-act="next"]');
+  check(r, '確認画面が出る', (await page.textContent('.sheet h2')).includes('この子でいい'));
+  await page.click('[data-act="pic"]'); await page.click('[data-act="pen"]'); await page.click('[data-act="pick"][data-i="5"]');
+  await page.waitForSelector('[data-act="ok"]', { timeout: 5000 }); await page.click('[data-act="ok"]');
+  check(r, '絵を用意しなおすと、名前を残したまま確認に戻る', (await page.textContent('.sheet')).includes('しろ'));
+  await page.click('[data-act="go"]'); await page.waitForSelector('#pet-card');
   check(r, '相棒を迎えると、ステータス欄が出る', await page.locator('#pet-card').count());
   await page.screenshot({ path: OUT + 'smoke-room.png' });
 

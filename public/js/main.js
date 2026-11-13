@@ -408,48 +408,58 @@ function expandMenu() {
 }
 
 // ---- はじめかた ----
+// 絵 → 名前と性格 → 確認。絵を先に用意して、それを見ながら名前と性格を決める
 function startFlow() {
-  let name = '', pers = null;
-  const step1 = () => modal(`<h2>相棒をむかえよう</h2><p class="note">名前と性格は、あとから変えられません。</p>
+  let name = '', pers = null, pic = null;
+  // 1. 絵を用意する。続きから遊ぶ人の入口もここ
+  const step1 = async () => {
+    const r = await drawFlow({
+      title: '相棒をむかえよう', gallery: PEN_COMPANIONS, closable: !!pic,
+      note: 'まずは相棒の絵を用意しよう。描いた絵が、そのままおへやで暮らします。',
+      extra: pic ? '' : '<button class="btn wide" data-act="import">セーブを読み込んで続きから</button>',
+      onExtra: a => { if (a === 'import') importSave(() => step1()); },
+    });
+    if (r === undefined) return; // セーブの読み込みへ
+    if (!r) return pic ? step3() : step1(); // 途中でやめた：用意しなおしの途中なら確認へ戻る
+    pic = r;
+    name ? step3() : step2();
+  };
+  // 2. 絵を見ながら、名前と性格を決める
+  const step2 = () => modal(`<h2>どんな子？</h2>
+    <div class="paper small"><img src="${pic.image}" alt="" draggable="false"></div>
+    <p class="note">名前と性格は、あとから変えられません。</p>
     <label class="field">名前<input id="pet-name" maxlength="10" value="${esc(name)}" placeholder="例：しろ"></label>
     <div class="list" role="radiogroup" aria-label="性格">${PERSONALITIES.map(p => `<button class="btn wide pers" role="radio" data-act="p" data-id="${p.id}" aria-pressed="${p.id === pers}" aria-checked="${p.id === pers}"><b>${p.name}</b><small>${p.note}</small></button>`).join('')}</div>
-    <button class="btn primary wide" data-act="next">つぎへ（絵を用意する）</button>
-    <button class="btn wide" data-act="import">セーブを読み込んで続きから</button>`, {
+    <button class="btn primary wide" data-act="next">つぎへ</button>
+    <button class="btn wide" data-act="pic">絵を用意しなおす</button>`, {
     closable: false,
     onAct: async (a, el) => {
-      if (a === 'import') return importSave(() => step1());
       if (a === 'p') {
         pers = el.dataset.id;
         document.querySelectorAll('.pers').forEach(b => { const on = b === el; b.setAttribute('aria-pressed', on); b.setAttribute('aria-checked', on); });
         return;
       }
+      name = $('#pet-name').value.trim(); // 絵を用意しなおすときも、入れかけの名前は残す
+      if (a === 'pic') return step1();
       if (a !== 'next') return;
-      name = $('#pet-name').value.trim();
       if (!name) { toast('名前をつけてね'); $('#pet-name').focus(); return; }
       if (!pers) { toast('性格を選んでね'); return; }
-      step2();
+      step3();
     },
   });
-  let pic = null;
-  const step2 = async () => {
-    const r = await drawFlow({ title: `${name}の絵`, gallery: PEN_COMPANIONS, note: '描いた絵が、そのままおへやで暮らします。' });
-    if (!r) return pic ? step3() : step1();
-    pic = r;
-    step3();
-  };
-  // 自分で描いた場合も魔法のペンの場合も、最後にこの確認画面を通る
+  // 3. 確認。自分で描いた場合も魔法のペンの場合も、最後にここを通る
   const step3 = () => {
     const p = PERSONALITIES.find(x => x.id === pers);
     modal(`<h2>この子でいい？</h2>
       <div class="paper"><img src="${pic.image}" alt="" draggable="false"></div>
       <dl class="confirm"><dt>名前</dt><dd>${esc(name)}</dd><dt>性格</dt><dd>${esc(p.name)}（${esc(p.note)}）</dd><dt>絵</dt><dd>${pic.self ? '自分で描いた' : '魔法のペンが描いた'}</dd></dl>
       <p class="note">名前と性格は、はじめたあとは変えられません。絵は3日目まで描き直せて、それ以降は手直しだけできます。</p>
-      <div class="row-end"><button class="btn" data-act="info">名前・性格をなおす</button><button class="btn" data-act="pic">絵を用意しなおす</button></div>
+      <div class="row-end"><button class="btn" data-act="pic">絵を用意しなおす</button><button class="btn" data-act="info">名前・性格をなおす</button></div>
       <button class="btn primary wide" data-act="go">この子とはじめる</button>`, {
       closable: false,
       onAct: async a => {
-        if (a === 'info') return step1();
-        if (a === 'pic') return step2();
+        if (a === 'info') return step2();
+        if (a === 'pic') return step1();
         if (a !== 'go') return;
         closeModal();
         S.createPet(state, { name, personality: pers, image: pic.image, self: pic.self });
