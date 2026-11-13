@@ -30,15 +30,15 @@ export async function passSplash(page) {
   await page.waitForSelector('#splash', { state: 'detached' });
 }
 
-// はじめかた：名前 → 性格 → 魔法のペン → 確認
+// はじめかた：魔法のペンで絵 → 名前と性格 → 確認
 export async function createPet(page, { name = 'しろ', personality = 'curious', pick = 3 } = {}) {
-  await page.fill('#pet-name', name);
-  await page.click(`[data-id="${personality}"]`);
-  await page.click('[data-act="next"]');
   await page.click('[data-act="pen"]');
   await page.click(`[data-act="pick"][data-i="${pick}"]`);
   await page.waitForSelector('[data-act="ok"]', { timeout: 5000 });
   await page.click('[data-act="ok"]');
+  await page.fill('#pet-name', name);
+  await page.click(`[data-id="${personality}"]`);
+  await page.click('[data-act="next"]');
   await page.click('[data-act="go"]');
   await page.waitForSelector('#pet-card');
 }
