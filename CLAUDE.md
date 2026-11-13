@@ -1,6 +1,7 @@
 # おえかき暮らし：作業メモ（Claude 向け）
 
 自分で描いた相棒と暮らす、お絵かき＋お世話のブラウザゲーム。ビルドなしの静的サイト（ES Modules）。
+ゲームそのものは `public/` にあり、そこだけが公開される。それ以外（このメモ・テスト・プレビュー用の差し替え）は公開しない。
 制作者とのやり取りは日本語。コメント・コミットメッセージ・ゲーム内の文言も日本語で書く。
 
 ## 参照先
@@ -9,7 +10,7 @@
   - 7章が「いまの状況とマイルストーン」。次に何をやるかはここで決まる
   - 5章「開発時の注意事項」（複雑さの上限・避けるべき表現）を守る
 - プレビュー（artifacts）：https://claude.ai/artifact/FgZ6WiqbZtyTt4Km9BwuHk
-- 公開：GitHub Pages（`main` ブランチのルートをそのまま配信）
+- 公開：GitHub Pages。`main` に入ると、GitHub Actions（`.github/workflows/pages.yml`）が `public/` だけを公開する
 
 ## 作業の流れ
 
@@ -25,13 +26,13 @@
 artifacts は外部スクリプトを CDN からしか読めない・ダウンロードできない・IndexedDB が使えないことがある。
 そのため公開版と2ファイルだけ違う。差し替えは `preview/` に置いてある（詳しくは `preview/README.md`）。
 
-- 公開するのは `index.html`・`style.css`・`js/`・`assets/pen/`・`assets/favicon.svg`。`vendor/` と `assets/audio/` は載せない
+- 載せるのは `public/` の中の `index.html`・`style.css`・`js/`・`assets/pen/`・`assets/favicon.svg`（artifacts 上のパスは `public/` を外したもの）。`vendor/` と `assets/audio/` は載せない
 - `js/three.js` と `js/config.js` は、`preview/js/` の同名ファイルを載せる
 - 変えたファイルだけを載せ直せばよい（publish_files は載せなかったファイルを残す）
 
 ## 決まりごと（設計書から、コードを書くときに効くもの）
 
-- **ゲーム本体は依存なし**。three.js は `vendor/` に同梱。`package.json` はテスト用だけ
+- **ゲーム本体は依存なし**。three.js は `public/vendor/` に同梱。`package.json` はテスト用だけ
 - **CSS は `style.css` 1ファイル**。後から上書きする CSS を積み重ねない
 - **画面**：全画面の3D＋HUD。詳しい内容はポップアップ。スマホ縦向きが基準（幅 390px で必ず確認）
 - **操作**：スマホのブラウザ前提。長押し・ダブルタップ・画面端のスワイプは使わない。共通の入力は `js/input.js`（`onDrag` は `pointercancel` も終わりとして扱う）
@@ -46,6 +47,8 @@ artifacts は外部スクリプトを CDN からしか読めない・ダウン�
 
 ## ファイル
 
+`public/` の中（表の `js/` などは `public/js/` のこと）と、その外に分かれる。
+
 | 場所 | 役割 |
 |---|---|
 | `index.html` / `style.css` | 画面の骨組みと見た目。起動画面（`#splash`）もここ |
@@ -58,7 +61,10 @@ artifacts は外部スクリプトを CDN からしか読めない・ダウン�
 | `js/splash.js` | 起動画面の後半（タップしてはじめる。最初のタップで音を使えるようにする） |
 | `js/input.js` / `js/audio.js` / `js/ui.js` | 入力の共通処理 / 効果音（合成）/ アイコン・ポップアップ・吹き出し |
 | `js/config.js` / `js/three.js` | 動作の切り替え / three.js の読み込み口（プレビューでは差し替え） |
-| `tests/` | 自動の確認（下） |
+| `public/vendor/` | three.js（同梱版） |
+| `tests/` | 自動の確認（下）。`public/` の外 |
+| `preview/` | artifacts プレビュー用の差し替え。`public/` の外 |
+| `.github/workflows/pages.yml` | `public/` を GitHub Pages に公開する |
 
 ## テスト
 
