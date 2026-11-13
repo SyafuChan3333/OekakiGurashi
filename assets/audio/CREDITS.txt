@@ -1,0 +1,21 @@
+おえかき暮らしと、小さなカフェ — ゲーム内の音楽と効果音
+
+BGM：日向ぼっこ／のほほん喫茶
+作曲：甘茶（Amacha）／配布：甘茶の音楽工房
+https://amachamusic.chagasi.com/music_hinatabokko.html
+https://amachamusic.chagasi.com/music_nohohonkissa.html
+利用規約：https://amachamusic.chagasi.com/terms.html
+2026-11-03に利用条件を確認。ゲームのBGMとして同梱しています。
+楽曲のみの販売・二次配布、作曲者の詐称、Content ID登録は禁止。
+
+効果音：Interface Sounds (1.0) — Kenney
+https://kenney.nl/assets/interface-sounds
+License: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+click_003.ogg → tap.ogg
+confirmation_001.ogg → complete.ogg
+bong_001.ogg → happy.ogg
+
+Cat meow: "Meow of a Siamese cat" by freemaster2; CC0 1.0.
+https://commons.wikimedia.org/wiki/File:Meow_of_a_Siamese_cat_-_freemaster2.wav
+https://creativecommons.org/publicdomain/zero/1.0/
+Adapted: trimmed trailing silence, gentle fade and lower volume; encoded as MP3 and OGG.

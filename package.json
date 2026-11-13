@@ -1,0 +1,13 @@
+{
+  "name": "oekaki-gurashi",
+  "private": true,
+  "type": "module",
+  "description": "おえかき暮らし。ビルドなしの静的サイト。package.json はテスト用（ゲーム本体は依存なし）",
+  "scripts": {
+    "serve": "node tests/server.mjs",
+    "test": "node tests/logic.mjs && node tests/smoke.mjs && node tests/minigames.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
