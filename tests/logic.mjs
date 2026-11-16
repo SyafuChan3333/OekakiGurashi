@@ -22,6 +22,15 @@ check('迎えに行くと戻る', t.care.status === 'ok');
 t.day = 2; check('2日目は白紙から描き直せる', S.canRedrawFresh(t));
 t.day = 5; check('5日目は描き直せない', !S.canRedrawFresh(t));
 
+// 魔法のペンの絵には手を入れない（設計書 2.7）
+const pp = S.newState(); S.createPet(pp, { name: 'p', personality: 'playful', image: 'assets/pen/cat3.png', self: false });
+check('魔法のペンの子は手直しできない', !S.canTouchUp(pp));
+S.touchUpPet(pp, 'assets/pen/cat5.png', false);
+check('ペンで描き直しても、ペンの子のまま', pp.pet.self === false && !S.canTouchUp(pp));
+S.touchUpPet(pp, 'data:image/png;base64,xx', true);
+check('自分で描き直すと、手直しできるようになる', S.canTouchUp(pp));
+check('描き直し前の絵は、ペンの絵かどうかを覚えている', pp.memories.at(-1).self === false && pp.memories.at(-2).self === false);
+
 // カフェ：出来ばえ「よい」でチップ
 const c = S.newState(); S.createPet(c, { name: 'c', personality: 'playful', image: 'x', self: false });
 c.cafe.guestNo = 1; // 飲みものを頼むお客さま（はじめから持っている料理で出せる）

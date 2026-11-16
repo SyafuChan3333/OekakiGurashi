@@ -213,11 +213,14 @@ export function createPet(s, { name, personality, image, self }) {
 }
 // 名前と性格は固定。絵は手直しのみ。はじめの3日間だけ白紙から描き直せる（3.6）
 export const canRedrawFresh = s => s.day - (s.pet?.createdDay ?? s.day) < 3;
-export function touchUpPet(s, image) {
-  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, day: s.day });
+// 相棒の絵を替える。手直し（自分で描いた子に描き足す）と、はじめの3日間の描き直し（自分で描く／魔法のペン）の両方
+export function touchUpPet(s, image, self = true) {
+  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day });
   s.pet.image = image;
-  s.pet.self = true;
+  s.pet.self = self;
 }
+// 手直し（描き足し）できるのは、自分で描いた子だけ（設計書 2.7）
+export const canTouchUp = s => !!s.pet?.self;
 
 // ---- カフェ ----
 export const guest = s => GUESTS[s.cafe.guestNo % GUESTS.length];

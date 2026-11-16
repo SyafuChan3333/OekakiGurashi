@@ -220,19 +220,25 @@ function petMenu() {
   modal(`<h2>${esc(state.pet.name)}</h2>
     <div class="paper small"><img src="${state.pet.image}" alt="" draggable="false"></div>
     <dl class="confirm"><dt>性格</dt><dd>${esc(p.name)}</dd><dt>おなか</dt><dd>${s.hunger}</dd><dt>ごきげん</dt><dd>${s.mood}</dd><dt>なかよし</dt><dd>${s.bond}</dd></dl>
-    <button class="btn wide" data-act="touchup">${icon('pen', 20)} ${esc(state.pet.name)}を手直し</button>`, {
-    onAct: a => { if (a === 'touchup') { closeModal(); touchUp(); } },
+    ${S.canRedrawFresh(state) ? `<button class="btn wide" data-act="redraw">${icon('pen', 20)} ${esc(state.pet.name)}を描き直す</button>`
+      : S.canTouchUp(state) ? `<button class="btn wide" data-act="touchup">${icon('pen', 20)} ${esc(state.pet.name)}を手直し</button>`
+      : '<p class="note">魔法のペンが描いた絵は、手直しできません。</p>'}`, {
+    onAct: a => { if (a === 'touchup' || a === 'redraw') { closeModal(); touchUp(); } },
   });
 }
 
-// ---- 相棒の手直し（3日目までは白紙から描き直せる） ----
+// ---- 相棒の絵を替える ----
+// はじめの3日間：自分で描く／魔法のペンで描き直せる。自分で描いた子なら、いまの絵に描き足すところから始める
+// それ以降：自分で描いた子だけ、いまの絵に描き足す手直し。魔法のペンの絵には手を入れない（設計書 2.7）
 async function touchUp() {
-  let img;
+  let r;
   if (S.canRedrawFresh(state)) {
-    const r = await drawFlow({ title: `${state.pet.name}を描き直す`, gallery: PEN_COMPANIONS, base: state.pet.image, note: '3日目までは白紙から描き直せます。それ以降は、いまの絵に描き足す手直しになります。' });
-    img = r?.image; if (r) state.pet.self = r.self;
-  } else img = await openEditor({ title: `${state.pet.name}を手直し`, base: state.pet.image });
-  if (img) { S.touchUpPet(state, img); syncPet(); world.happy(); say('pet', 'どう？ にあう？'); await persist(); renderHUD(); }
+    r = await drawFlow({ title: `${state.pet.name}を描き直す`, gallery: PEN_COMPANIONS, base: S.canTouchUp(state) ? state.pet.image : null, note: 'はじめの3日間は、別の絵に描き直せます。' });
+  } else if (S.canTouchUp(state)) {
+    const img = await openEditor({ title: `${state.pet.name}を手直し`, base: state.pet.image });
+    r = img && { image: img, self: true };
+  }
+  if (r) { S.touchUpPet(state, r.image, r.self); syncPet(); world.happy(); say('pet', 'どう？ にあう？'); await persist(); renderHUD(); }
 }
 
 // ---- 模様替え（ポスターと引っ越しをまとめる） ----

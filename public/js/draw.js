@@ -19,7 +19,7 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         ${note ? `<p class="note">${esc(note)}</p>` : ''}
         <div class="two-choice">
           <button class="choice dark" data-act="self">${icon('pen', 44)}<b>自分で描く</b><small>描いたものには、いいことがあります</small></button>
-          ${gallery.length ? `<button class="choice" data-act="pen">${icon('magic', 44)}<b>魔法のペンにおまかせ</b><small>あとから描き直せます</small></button>` : ''}
+          ${gallery.length ? `<button class="choice" data-act="pen">${icon('magic', 44)}<b>魔法のペンにおまかせ</b><small>好きな絵を描いてもらえます</small></button>` : ''}
         </div>${extra}`, {
         closable,
         onAct: async act => {
@@ -43,6 +43,7 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         },
       });
     };
+    // 魔法のペンが描いた絵には手を入れない（設計書 2.7）。描き上がりは「これにする／ほかの絵にする」だけ
     const magic = g => {
       modal(`
         <h2>${esc(g.name)}</h2>
@@ -53,17 +54,13 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         modal(`
           <h2>${esc(g.name)}</h2>
           <div class="paper"><img class="fadein" src="${g.src}" alt="" draggable="false"></div>
-          <div class="row-end">
-            <button class="btn" data-act="back">ほかの絵にする</button>
-            <button class="btn" data-act="redraw">自分で描き直す</button>
-          </div>
-          <button class="btn primary wide" data-act="ok">これにする</button>`, {
+          <button class="btn primary wide" data-act="ok">これにする</button>
+          <button class="btn wide" data-act="back">ほかの絵にする</button>`, {
           closable,
           onAct: async act => {
             if (act === 'close') return resolve(null);
             if (act === 'back') return pickPen();
             if (act === 'ok') done({ image: g.src, self: false, name: g.name, pen: g });
-            if (act === 'redraw') { closeModal(); const img = await openEditor({ title, base: g.src }); resolve(img ? { image: img, self: true } : null); }
           },
         });
       }, 1300);
@@ -72,7 +69,8 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
   });
 }
 
-// 全画面のお絵かき（HUDは隠す）。base があればそれを下に敷いて描き足す
+// 全画面のお絵かき（HUDは隠す）。base があればそれを下に敷いて描き足す。
+// base に渡してよいのは自分で描いた絵だけ（魔法のペンの絵には手を入れない：設計書 2.7）
 export function openEditor({ title, base = null }) {
   return new Promise(resolve => {
     const root = $('#editor');

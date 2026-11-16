@@ -82,6 +82,20 @@ try {
   check(r, 'セーブを文字で書き出せる', save.length > 100, `${save.length} 文字`);
   await page.click('.sheet-close');
 
+  // 魔法のペンの子：はじめの3日間は描き直せる。描き上がりに「自分で描き直す」はない。4日目からは手直しも出ない（設計書 2.7）
+  await page.click('[data-page="room"]'); await wait(300);
+  await page.click('#pet-card'); await wait(200);
+  check(r, 'はじめの3日間は「描き直す」が出る', await page.locator('[data-act="redraw"]').count());
+  await page.click('[data-act="redraw"]'); await wait(200);
+  await page.click('[data-act="pen"]'); await page.click('[data-act="pick"][data-i="5"]');
+  await page.waitForSelector('[data-act="ok"]', { timeout: 5000 });
+  check(r, '魔法のペンの描き上がりに「自分で描き直す」がない', !(await page.locator('[data-act="redraw"]').count()) && await page.locator('[data-act="back"]').count());
+  await page.click('[data-act="ok"]'); await wait(400);
+  for (let i = 0; i < 3; i++) { await page.click('#settings'); await wait(150); await page.click('details.debug summary'); await page.click('[data-act="dbg-day"]'); await wait(250); }
+  await page.click('#pet-card'); await wait(200);
+  check(r, '4日目からは、魔法のペンの子に手直しも描き直しも出ない', !(await page.locator('[data-act="touchup"], [data-act="redraw"]').count()) && (await page.textContent('.sheet')).includes('手直しできません'));
+  await page.click('.sheet-close'); await wait(200);
+
   // 開発用：逃げた状態 → 迎えに行く → やめる
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('#settings'); await wait(200);
