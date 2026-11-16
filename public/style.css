@@ -313,5 +313,6 @@ details.debug .list { margin-top: 10px; }
 /* 見本を見せる：魔法のペンの一覧の先頭の枠 */
 .pen-item.sample { justify-content: center; background: var(--paper); border-style: dashed; color: var(--ink); }
 .pen-item.sample svg { height: 96px; }
-.pen-item.sample small { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }
+.pen-item.sample span { font-size: 12px; word-break: keep-all; line-height: 1.35; }
+.pen-item.sample small { display: block; font-size: 10px; font-weight: 400; color: var(--sub); white-space: nowrap; }
 .btn.toggle[aria-pressed="true"] { background: #f5d77a; }
