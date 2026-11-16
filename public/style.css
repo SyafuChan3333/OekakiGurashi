@@ -194,6 +194,7 @@ body.night #world { filter: brightness(.35); transition: filter .5s; }
   .choice { min-height: 130px; }
   .pen-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pen-item img { height: 76px; }
+  .pen-item.sample svg { height: 76px; }
   .paper { height: 220px; }
   .ed-canvas { width: 100%; }
 }
@@ -309,3 +310,8 @@ details.debug .list { margin-top: 10px; }
 #splash.go .sp-line path { animation: spLine .45s ease-out 1.5s forwards; }
 @keyframes spLine { to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { #splash.go .sp-line path { animation: none; stroke-dashoffset: 0; } }
+/* 見本を見せる：魔法のペンの一覧の先頭の枠 */
+.pen-item.sample { justify-content: center; background: var(--paper); border-style: dashed; color: var(--ink); }
+.pen-item.sample svg { height: 96px; }
+.pen-item.sample small { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }
+.btn.toggle[aria-pressed="true"] { background: #f5d77a; }
