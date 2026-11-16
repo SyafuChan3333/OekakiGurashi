@@ -17,7 +17,8 @@ export function newState() {
     care: { dirty: 0, sick: 0, lonely: 0, status: 'ok' }, // status: ok | sick | escaped | gone
     shop: SHOP_START.map(x => ({ ...x, self: false })), // コンビニの商品
     bag: { 's-cookie': 2, 's-ball': 1 }, // 持ち物（はじめはクッキー2つとボール） { 商品id: 個数 }。おもちゃは1つあれば何度でも遊べる
-    poster: null,         // おへやのポスター { image, self }
+    posters: [],          // 描いたポスター [{ id, image, self, drawnDay, pen? }]（設計書 3.9）
+    poster: null,         // 飾っているポスターの id（なければ null）
     house: 'washitsu',
     owned: ['washitsu'],
     cafe: {
@@ -98,6 +99,12 @@ export const valid = s => !!s && s.v === 1 && typeof s.day === 'number' && s.caf
 // 古いセーブに足りない項目を補う
 export function upgrade(s) {
   s.shop ??= SHOP_START.map(x => ({ ...x, self: false }));
+  // 以前のセーブは、飾っていたポスターの絵そのものを poster に持っていた → 一覧の1枚目に移して飾る（設計書 3.9）
+  s.posters ??= [];
+  if (s.poster && typeof s.poster === 'object') {
+    const old = { id: 'p-old', image: s.poster.image, self: !!s.poster.self, drawnDay: s.poster.drawnDay ?? null };
+    s.posters.unshift(old); s.poster = old.id;
+  }
   s.bag ??= {};
   delete s.food;
   return s;
@@ -262,6 +269,26 @@ export function addDish(s, { name, cat, image, self, price }) {
   s.cafe.menu.push(m);
   return m;
 }
+// ---- ポスター（設計書 3.9。カフェのメニューと同じ扱い：12枚まで、いっぱいなら足せない） ----
+export const POSTER_MAX = 12;
+export const posterFull = s => s.posters.length >= POSTER_MAX;
+export const currentPoster = s => s.posters.find(p => p.id === s.poster) ?? null;
+// 描いたポスターを一覧に足して飾る。魔法のペンの同じ絵を2回選んだときは、前の1枚を飾り直す
+export function addPoster(s, { image, self, pen = null }) {
+  const same = !self && pen && s.posters.find(p => p.pen === pen);
+  if (same) { s.poster = same.id; return same; }
+  if (posterFull(s)) throw Error(`ポスターは${POSTER_MAX}枚までです`);
+  const p = { id: 'p-' + Date.now().toString(36), image, self, drawnDay: s.day, ...(pen ? { pen } : {}) };
+  s.posters.push(p);
+  s.poster = p.id;
+  return p;
+}
+// 飾り替える。null ならはずす
+export function hangPoster(s, id) {
+  if (id != null && !s.posters.some(p => p.id === id)) throw Error('ポスターが見つかりません');
+  s.poster = id;
+}
+
 export function expandCafe(s) {
   const next = CAFE_LEVELS[s.cafe.level + 1];
   if (!next) throw Error('これ以上は広げられません');
@@ -288,12 +315,12 @@ export function moveHouse(s, id) {
 // 保存・共有できるのは自分で描いた絵だけ（self が true のもの。わからないものはできない：設計書 2.7）
 export function sketchbook(s) {
   const list = [];
-  const add = (kind, it, day) => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null });
+  const add = (kind, it, day, note = '') => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null, note });
   if (s.pet) add('pet', s.pet, s.pet.drawnDay ?? s.pet.createdDay);
   for (const m of s.memories) add(m.kind === 'farewell' ? 'farewell' : 'before', m, m.day);
   for (const m of s.cafe.menu) if (m.drawnDay != null || m.self) add('dish', m, m.drawnDay);
   for (const it of s.shop) if (it.drawnDay != null || it.self) add(it.kind === 'toy' ? 'toy' : 'food', it, it.drawnDay);
-  if (s.poster) add('poster', { name: 'ポスター', ...s.poster }, s.poster.drawnDay);
+  for (const p of s.posters) add('poster', { ...p, name: 'ポスター' }, p.drawnDay, p.id === s.poster ? 'かざっている' : ''); // 飾っている1枚は種類の欄に添える
   // いまの相棒をいつも先頭に。ほかは新しい順（描いた日がわからないものは最後）
   const [pet, ...rest] = s.pet ? list : [null, ...list];
   const sorted = rest.map((x, i) => ({ ...x, i })).sort((a, b) => (b.day ?? -1) - (a.day ?? -1) || b.i - a.i).map(({ i, ...x }) => x);
