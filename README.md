@@ -99,7 +99,7 @@ URL に `?debug` を付けたときだけ、設定のいちばん下に「開発
 
 ## 開発
 
-ファイル構成・決まりごと・作業の流れは `CLAUDE.md` に、artifacts でのプレビューのしかたは `preview/README.md` にまとめています。
+設計書は `docs/design.md`、ファイル構成・決まりごと・作業の流れは `CLAUDE.md`、artifacts でのプレビューのしかたは `preview/README.md` にまとめています。
 
 ```
 npm install && npx playwright install chromium   # 初回だけ
