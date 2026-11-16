@@ -311,6 +311,7 @@ function shopMenu() {
   });
 }
 function newItem() {
+  if (S.shopFull(state)) return modal(`<h2>新しい商品を描く</h2><p class="note">商品は${S.SHOP_MAX}個までです。</p>`);
   const disc = Math.round((1 - SELF_DISCOUNT) * 100);
   modal(`<h2>新しい商品を描く</h2><p class="note">描いた商品はお店に並びます。自分で描くと${disc}%引きで買えます。</p>
     <div class="list">
@@ -419,7 +420,8 @@ function cafeMenu() {
   const g = S.guest(state), list = S.matches(state);
   modal(`<h2>メニュー（${CATEGORIES[g.wants].name}）</h2>
     ${list.length ? `<div class="pen-grid">${list.map(m => `<button class="pen-item ${m.id === state.cafe.picked ? 'on' : ''}" data-act="pick" data-id="${m.id}" ${state.cafe.step !== 'order' ? 'disabled' : ''}><img src="${m.image}" alt="" draggable="false"><span>${esc(m.name)}${m.self ? ' ✎' : ''}<br><small>${m.price}コイン</small></span></button>`).join('')}</div>` : '<p class="note">この種類の料理がまだありません。</p>'}
-    <button class="btn wide" data-act="new" ${state.cafe.step !== 'order' ? 'disabled' : ''}>${icon('pen', 20)} 新しい料理を描く</button>`, {
+    <button class="btn wide" data-act="new" ${state.cafe.step !== 'order' || S.menuFull(state) ? 'disabled' : ''}>${icon('pen', 20)} 新しい料理を描く</button>
+    ${S.menuFull(state) ? `<p class="note">メニューは${S.MENU_MAX}品までです。</p>` : ''}`, {
     wide: true,
     onAct: async (a, el) => {
       if (a === 'pick') { S.pickDish(state, el.dataset.id); closeModal(); say('pet', 'それにするね'); await persist(); renderHUD(); }

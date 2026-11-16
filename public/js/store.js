@@ -103,6 +103,12 @@ export function upgrade(s) {
   return s;
 }
 
+// ---- 上限（いっぱいのときは、描く前に止める。描き終わってから入らない、をなくす） ----
+// 上限の数と、いっぱいのときの扱いは未決（設計書 8章）
+export const MENU_MAX = 12, SHOP_MAX = 24;
+export const menuFull = s => s.cafe.menu.length >= MENU_MAX;
+export const shopFull = s => s.shop.length >= SHOP_MAX;
+
 // ---- 倍率（ハラハラモード） ----
 export const gainRate = s => (s.mode === 'harahara' ? HARAHARA.multiplier : 1);
 function gain(s, key, n) { s.stats[key] = clamp(s.stats[key] + n * gainRate(s)); }
@@ -127,7 +133,7 @@ export function buyItem(s, id) {
   return it;
 }
 export function addShopItem(s, { kind, toy, name, image, self }) {
-  if (s.shop.length >= 24) throw Error('商品は24個までです');
+  if (shopFull(s)) throw Error(`商品は${SHOP_MAX}個までです`);
   const base = NEW_ITEM_PRICE[kind];
   const it = { id: 's-' + Date.now().toString(36), kind, name, image, self, drawnDay: s.day, price: self ? Math.round(base * SELF_DISCOUNT) : base, ...(kind === 'toy' ? { toy } : {}) };
   s.shop.push(it);
@@ -257,7 +263,7 @@ export function nextGuest(s) {
   s.cafe.picked = null;
 }
 export function addDish(s, { name, cat, image, self, price }) {
-  if (s.cafe.menu.length >= 12) throw Error('メニューは12品までです');
+  if (menuFull(s)) throw Error(`メニューは${MENU_MAX}品までです`);
   const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, drawnDay: s.day, sold: 0 };
   s.cafe.menu.push(m);
   return m;
