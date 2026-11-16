@@ -266,8 +266,9 @@ export function nextGuest(s) {
 }
 export function addDish(s, { name, cat, image, self, price }) {
   if (s.cafe.menu.length >= 12) throw Error('メニューは12品までです');
-  const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, drawnDay: s.day, drawnAt: Date.now(), sold: 0 };
+  const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, drawnDay: s.day, sold: 0 };
   s.cafe.menu.push(m);
+  m.drawnAt = Date.now(); // 描いた時刻（スケッチブックの並べ替え用：設計書 2.6）
   return m;
 }
 // ---- ポスター（設計書 3.9。カフェのメニューと同じ扱い：12枚まで、いっぱいなら足せない） ----
