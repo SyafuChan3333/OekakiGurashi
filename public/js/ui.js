@@ -7,6 +7,8 @@ const P = {
   ball: '<circle cx="12" cy="12" r="8"/><path d="M5 9c4 2 10 2 14 0M5 15c4-2 10-2 14 0"/>',
   pen: '<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3"/>',
   magic: '<path d="M4 20l4-1 9-9-3-3-9 9z"/><path d="M18 2l.8 2.2L21 5l-2.2.8L18 8l-.8-2.2L15 5l2.2-.8z"/>',
+  // 見本を見せる：写真の枠に、上向きの矢印（写真・画像を選んで渡す）
+  sample: '<rect x="3" y="7" width="13" height="13" rx="2"/><path d="M3 17l4-4 3 3 2-2 4 4"/><circle cx="12.5" cy="10.5" r="1.2"/><path d="M19 13V3"/><path d="M15.5 6.5L19 3l3.5 3.5"/>',
   more: '<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
   bath: '<path d="M3 13h18v2a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z"/><circle cx="8" cy="7" r="2"/><circle cx="14" cy="5" r="1.5"/>',
   moon: '<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>',

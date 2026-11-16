@@ -1,4 +1,5 @@
 import * as S from './store.js';
+import { SKETCH_KINDS } from './store.js';
 import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA } from './data.js';
 import { World } from './scene.js';
 import { $, esc, icon, modal, closeModal, modalOpen, toast, say, placeBubbles } from './ui.js';
@@ -38,7 +39,7 @@ async function init() {
   $('#places').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) go(b.dataset.page); });
   $('#settings').addEventListener('click', settings);
   $('#next-guest').addEventListener('click', () => act('next').catch(err => toast(err.message)));
-  $('#memories-btn').addEventListener('click', () => { play('tap'); memories(); });
+  $('#sketchbook-btn').addEventListener('click', () => { play('tap'); sketchbook(); });
   $('#status').addEventListener('click', e => { if (e.target.closest('#pet-card')) { play('tap'); petMenu(); } });
   $('#actions').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b && !b.disabled) act(b.dataset.a).catch(err => toast(err.message)); });
   $('#alert').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b) act(b.dataset.a).catch(err => toast(err.message)); });
@@ -220,19 +221,25 @@ function petMenu() {
   modal(`<h2>${esc(state.pet.name)}</h2>
     <div class="paper small"><img src="${state.pet.image}" alt="" draggable="false"></div>
     <dl class="confirm"><dt>性格</dt><dd>${esc(p.name)}</dd><dt>おなか</dt><dd>${s.hunger}</dd><dt>ごきげん</dt><dd>${s.mood}</dd><dt>なかよし</dt><dd>${s.bond}</dd></dl>
-    <button class="btn wide" data-act="touchup">${icon('pen', 20)} ${esc(state.pet.name)}を手直し</button>`, {
-    onAct: a => { if (a === 'touchup') { closeModal(); touchUp(); } },
+    ${S.canRedrawFresh(state) ? `<button class="btn wide" data-act="redraw">${icon('pen', 20)} ${esc(state.pet.name)}を描き直す</button>`
+      : S.canTouchUp(state) ? `<button class="btn wide" data-act="touchup">${icon('pen', 20)} ${esc(state.pet.name)}を手直し</button>`
+      : '<p class="note">魔法のペンが描いた絵は、手直しできません。</p>'}`, {
+    onAct: a => { if (a === 'touchup' || a === 'redraw') { closeModal(); touchUp(); } },
   });
 }
 
-// ---- 相棒の手直し（3日目までは白紙から描き直せる） ----
+// ---- 相棒の絵を替える ----
+// はじめの3日間：自分で描く／魔法のペンで描き直せる。自分で描いた子なら、いまの絵に描き足すところから始める
+// それ以降：自分で描いた子だけ、いまの絵に描き足す手直し。魔法のペンの絵には手を入れない（設計書 2.7）
 async function touchUp() {
-  let img;
+  let r;
   if (S.canRedrawFresh(state)) {
-    const r = await drawFlow({ title: `${state.pet.name}を描き直す`, gallery: PEN_COMPANIONS, base: state.pet.image, note: '3日目までは白紙から描き直せます。それ以降は、いまの絵に描き足す手直しになります。' });
-    img = r?.image; if (r) state.pet.self = r.self;
-  } else img = await openEditor({ title: `${state.pet.name}を手直し`, base: state.pet.image });
-  if (img) { S.touchUpPet(state, img); syncPet(); world.happy(); say('pet', 'どう？ にあう？'); await persist(); renderHUD(); }
+    r = await drawFlow({ title: `${state.pet.name}を描き直す`, gallery: PEN_COMPANIONS, base: S.canTouchUp(state) ? state.pet.image : null, note: 'はじめの3日間は、別の絵に描き直せます。' });
+  } else if (S.canTouchUp(state)) {
+    const img = await openEditor({ title: `${state.pet.name}を手直し`, base: state.pet.image });
+    r = img && { image: img, self: true };
+  }
+  if (r) { S.touchUpPet(state, r.image, r.self); syncPet(); world.happy(); say('pet', 'どう？ にあう？'); await persist(); renderHUD(); }
 }
 
 // ---- 模様替え（ポスターと引っ越しをまとめる） ----
@@ -247,7 +254,7 @@ function remodelMenu() {
       if (a === 'move') return go('house');
       if (a === 'poster') {
         const r = await drawFlow({ title: 'おへやのポスター', gallery: PEN_POSTERS });
-        if (r) { state.poster = { image: r.image, self: r.self }; world.setPoster(r.image); if (r.self) say('pet', 'きみの絵だ！ かざってくれたんだ'); await persist(); }
+        if (r) { state.poster = { image: r.image, self: r.self, drawnDay: state.day }; world.setPoster(r.image); if (r.self) say('pet', 'きみの絵だ！ かざってくれたんだ'); await persist(); }
       }
     },
   });
@@ -358,9 +365,53 @@ async function chase() {
   await persist(); renderHUD();
 }
 
-function memories() {
-  const m = state.memories;
-  modal(`<h2>思い出</h2>${m.length ? `<div class="pen-grid">${m.map(x => `<div class="pen-item"><img src="${x.image}" alt="" draggable="false"><span>${esc(x.name)} · ${x.day}日目${x.kind === 'farewell' ? '（お別れ）' : ''}</span></div>`).join('')}</div>` : '<p class="note">手直しする前の絵や、お別れした子がここに残ります。</p>'}`, { wide: true });
+// ---- スケッチブック（設計書 2.6）：これまでの絵を見返す。自分で描いた絵は保存・共有できる ----
+function sketchbook() {
+  const list = S.sketchbook(state);
+  const dayNote = x => x.day == null ? '' : x.kind === 'before' ? `${x.day}日めまで` : x.kind === 'farewell' ? `${x.day}日めにお別れ` : `${x.day}日め`;
+  modal(`<h2>スケッチブック</h2>${list.length ? `<div class="pen-grid sketch-grid">${list.map((x, i) => `
+      <button class="pen-item" data-act="open" data-i="${i}"><img src="${x.image}" alt="" draggable="false">
+        <span>${esc(x.name || SKETCH_KINDS[x.kind])}<small>${SKETCH_KINDS[x.kind]}</small>${dayNote(x) ? `<small>${dayNote(x)}</small>` : ''}</span>
+        ${x.self ? `<i class="self-mark" title="自分で描いた絵">${icon('pen', 16)}</i>` : ''}</button>`).join('')}</div>`
+    : '<p class="note">描いた絵が、ここに並びます。</p>'}`, {
+    wide: true,
+    onAct: (a, el) => { if (a === 'open') sketch(list[+el.dataset.i]); },
+  });
+}
+function sketch(x) {
+  const canShare = x.self && navigator.canShare?.({ files: [new File([''], 'a.png', { type: 'image/png' })] });
+  modal(`<h2>${esc(x.name || SKETCH_KINDS[x.kind])}</h2>
+    <div class="paper"><img src="${x.image}" alt="" draggable="false"></div>
+    <p class="note">${SKETCH_KINDS[x.kind]}${x.day == null ? '' : ` · ${x.day}日め`}${x.self ? ' · 自分で描いた絵' : ' · 魔法のペンが描いた絵'}</p>
+    ${x.self ? `${canShare ? '<button class="btn primary wide" data-act="share">共有する</button>' : ''}
+      <button class="btn wide${canShare ? '' : ' primary'}" data-act="save">保存する</button>`
+      : '<p class="note">魔法のペンが描いた絵は、保存・共有できません。</p>'}
+    <button class="btn wide" data-act="back">もどる</button>`, {
+    onAct: async a => {
+      if (a === 'back') return sketchbook();
+      if (!x.self) return; // 魔法のペンの絵は外に出さない（設計書 2.7）
+      const file = await sketchFile(x);
+      if (a === 'save') {
+        const url = URL.createObjectURL(file), link = document.createElement('a');
+        link.href = url; link.download = file.name; document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        toast('画像を保存しました');
+      }
+      if (a === 'share') {
+        try { await navigator.share({ files: [file], text: `おえかき暮らしで描いた${x.name || SKETCH_KINDS[x.kind]}`, url: location.origin + location.pathname }); }
+        catch (e) { if (e?.name !== 'AbortError') toast('共有できませんでした'); }
+      }
+    },
+  });
+}
+// 保存・共有用の画像ファイル（背景は透明のまま。受け取った人は「見本を見せる」で持ち込める）
+async function sketchFile(x) {
+  const blob = await (await fetch(x.image)).blob();
+  const ext = blob.type === 'image/webp' ? 'webp' : 'png';
+  // ファイル名は英数字だけにする（日本語だと名前が付かない端末がある）。例：oekaki-poster-20261116-1042.png
+  const t = new Date(), p2 = n => String(n).padStart(2, '0');
+  const stamp = `${t.getFullYear()}${p2(t.getMonth() + 1)}${p2(t.getDate())}-${p2(t.getHours())}${p2(t.getMinutes())}`;
+  return new File([blob], `oekaki-${x.kind}-${stamp}.${ext}`, { type: blob.type || 'image/png' });
 }
 
 // ---- カフェ ----
@@ -541,7 +592,7 @@ function settings() {
         closeModal(); syncPet(); await persist(); renderHUD();
       }
       if (a === 'reset') {
-        modal(`<h2>最初からやり直す？</h2><p class="note">相棒、コイン、バッグの中身、買ったおうち、作ったメニューや商品、思い出、設定まで、すべて消えて、はじめて開いたときと同じ状態に戻ります。先にセーブを書き出しておくと安心です。</p><div class="row-end"><button class="btn" data-act="close">やめる</button><button class="btn danger" data-act="yes">すべて消してやり直す</button></div>`, {
+        modal(`<h2>最初からやり直す？</h2><p class="note">相棒、コイン、バッグの中身、買ったおうち、作ったメニューや商品、スケッチブック、設定まで、すべて消えて、はじめて開いたときと同じ状態に戻ります。先にセーブを書き出しておくと安心です。</p><div class="row-end"><button class="btn" data-act="close">やめる</button><button class="btn danger" data-act="yes">すべて消してやり直す</button></div>`, {
           onAct: async b => {
             if (b !== 'yes') return;
             await S.wipe();

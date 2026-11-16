@@ -28,7 +28,7 @@ export function newState() {
       step: 'order',      // order | made | served
     },
     served: 0,
-    memories: [],         // 手直し前の絵・お別れした子
+    memories: [],         // 手直し前の絵・お別れした子（スケッチブックに並ぶ。名前は互換のため memories のまま）
     sound: true,
     volume: 0.5,
   };
@@ -129,7 +129,7 @@ export function buyItem(s, id) {
 export function addShopItem(s, { kind, toy, name, image, self }) {
   if (s.shop.length >= 24) throw Error('商品は24個までです');
   const base = NEW_ITEM_PRICE[kind];
-  const it = { id: 's-' + Date.now().toString(36), kind, name, image, self, price: self ? Math.round(base * SELF_DISCOUNT) : base, ...(kind === 'toy' ? { toy } : {}) };
+  const it = { id: 's-' + Date.now().toString(36), kind, name, image, self, drawnDay: s.day, price: self ? Math.round(base * SELF_DISCOUNT) : base, ...(kind === 'toy' ? { toy } : {}) };
   s.shop.push(it);
   return it;
 }
@@ -199,7 +199,7 @@ export function bringBack(s) { s.care.status = 'ok'; s.care.lonely = 0; gain(s, 
 
 function farewell(s) {
   s.care.status = 'gone';
-  s.memories.push({ kind: 'farewell', name: s.pet.name, image: s.pet.image, day: s.day });
+  s.memories.push({ kind: 'farewell', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day });
 }
 export function startOver(s) {
   const keep = { shop: s.shop, bag: s.bag, coins: s.coins, house: s.house, owned: s.owned, cafe: s.cafe, memories: s.memories, served: s.served, sound: s.sound, volume: s.volume, day: s.day };
@@ -208,16 +208,20 @@ export function startOver(s) {
 
 // ---- 相棒 ----
 export function createPet(s, { name, personality, image, self }) {
-  s.pet = { name, personality, image, self, createdDay: s.day };
+  s.pet = { name, personality, image, self, createdDay: s.day, drawnDay: s.day };
   s.started = true;
 }
 // 名前と性格は固定。絵は手直しのみ。はじめの3日間だけ白紙から描き直せる（3.6）
 export const canRedrawFresh = s => s.day - (s.pet?.createdDay ?? s.day) < 3;
-export function touchUpPet(s, image) {
-  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, day: s.day });
+// 相棒の絵を替える。手直し（自分で描いた子に描き足す）と、はじめの3日間の描き直し（自分で描く／魔法のペン）の両方
+export function touchUpPet(s, image, self = true) {
+  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day });
   s.pet.image = image;
-  s.pet.self = true;
+  s.pet.self = self;
+  s.pet.drawnDay = s.day;
 }
+// 手直し（描き足し）できるのは、自分で描いた子だけ（設計書 2.7）
+export const canTouchUp = s => !!s.pet?.self;
 
 // ---- カフェ ----
 export const guest = s => GUESTS[s.cafe.guestNo % GUESTS.length];
@@ -254,7 +258,7 @@ export function nextGuest(s) {
 }
 export function addDish(s, { name, cat, image, self, price }) {
   if (s.cafe.menu.length >= 12) throw Error('メニューは12品までです');
-  const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, sold: 0 };
+  const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, drawnDay: s.day, sold: 0 };
   s.cafe.menu.push(m);
   return m;
 }
@@ -276,3 +280,23 @@ export function moveHouse(s, id) {
   }
   s.house = id;
 }
+
+// ---- スケッチブック（設計書 2.6） ----
+// これまでの絵を、セーブの中から集める（絵を二重に持たない）。いまの相棒が先頭、ほかは新しい順。
+// 並ぶのは：いまの相棒・描き直す前の相棒・お別れした子・自分で足した料理と商品・ポスター
+// はじめからある料理と商品は、遊ぶ人が描いたものではないので並べない（描いた日を持たないもので見分ける）
+// 保存・共有できるのは自分で描いた絵だけ（self が true のもの。わからないものはできない：設計書 2.7）
+export function sketchbook(s) {
+  const list = [];
+  const add = (kind, it, day) => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null });
+  if (s.pet) add('pet', s.pet, s.pet.drawnDay ?? s.pet.createdDay);
+  for (const m of s.memories) add(m.kind === 'farewell' ? 'farewell' : 'before', m, m.day);
+  for (const m of s.cafe.menu) if (m.drawnDay != null || m.self) add('dish', m, m.drawnDay);
+  for (const it of s.shop) if (it.drawnDay != null || it.self) add(it.kind === 'toy' ? 'toy' : 'food', it, it.drawnDay);
+  if (s.poster) add('poster', { name: 'ポスター', ...s.poster }, s.poster.drawnDay);
+  // いまの相棒をいつも先頭に。ほかは新しい順（描いた日がわからないものは最後）
+  const [pet, ...rest] = s.pet ? list : [null, ...list];
+  const sorted = rest.map((x, i) => ({ ...x, i })).sort((a, b) => (b.day ?? -1) - (a.day ?? -1) || b.i - a.i).map(({ i, ...x }) => x);
+  return pet ? [pet, ...sorted] : sorted;
+}
+export const SKETCH_KINDS = { pet: '相棒', before: '描き直す前の相棒', farewell: 'お別れした子', dish: '料理', food: 'ごはん', toy: 'おもちゃ', poster: 'ポスター' };

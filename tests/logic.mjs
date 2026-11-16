@@ -22,6 +22,25 @@ check('迎えに行くと戻る', t.care.status === 'ok');
 t.day = 2; check('2日目は白紙から描き直せる', S.canRedrawFresh(t));
 t.day = 5; check('5日目は描き直せない', !S.canRedrawFresh(t));
 
+// 魔法のペンの絵には手を入れない（設計書 2.7）
+const pp = S.newState(); S.createPet(pp, { name: 'p', personality: 'playful', image: 'assets/pen/cat3.png', self: false });
+check('魔法のペンの子は手直しできない', !S.canTouchUp(pp));
+S.touchUpPet(pp, 'assets/pen/cat5.png', false);
+check('ペンで描き直しても、ペンの子のまま', pp.pet.self === false && !S.canTouchUp(pp));
+S.touchUpPet(pp, 'data:image/png;base64,xx', true);
+check('自分で描き直すと、手直しできるようになる', S.canTouchUp(pp));
+check('描き直し前の絵は、ペンの絵かどうかを覚えている', pp.memories.at(-1).self === false && pp.memories.at(-2).self === false);
+
+// スケッチブック：自分で描いた絵だけ保存・共有できる。はじめからある料理・商品は並ばない（設計書 2.6・2.7）
+const sb = S.newState(); S.createPet(sb, { name: 'しろ', personality: 'playful', image: 'data:image/png;base64,me', self: true });
+sb.day = 2; S.addDish(sb, { name: 'くまパン', cat: 'sweet', image: 'data:image/png;base64,dish', self: true, price: 200 });
+sb.day = 3; S.addShopItem(sb, { kind: 'toy', toy: 'ball', name: 'ペンのボール', image: 'assets/pen/toy-ball.svg', self: false });
+S.touchUpPet(sb, 'assets/pen/cat3.png', false);
+const book = S.sketchbook(sb);
+check('スケッチブックに描いた絵が並ぶ（はじめからの料理・商品は並ばない）', book.length === 4, book.map(x => `${x.kind}:${x.day}`).join(' '));
+check('スケッチブックは、いまの相棒が先頭で、ほかは新しい順', book[0].kind === 'pet' && book.at(-1).kind === 'dish', book.map(x => x.kind).join(' '));
+check('魔法のペンの絵は保存・共有できない', book.filter(x => !x.self).every(x => x.image.startsWith('assets/pen/')) && book.some(x => x.self));
+
 // カフェ：出来ばえ「よい」でチップ
 const c = S.newState(); S.createPet(c, { name: 'c', personality: 'playful', image: 'x', self: false });
 c.cafe.guestNo = 1; // 飲みものを頼むお客さま（はじめから持っている料理で出せる）

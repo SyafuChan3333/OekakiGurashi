@@ -1,6 +1,6 @@
 // 「描く」：自分で描く／魔法のペンにおまかせ（2章）
 // エディタはわざと簡素にしている（ペン・消しゴム・色・太さ・戻す）。
-import { modal, closeModal, icon, esc, $ } from './ui.js';
+import { modal, closeModal, icon, esc, $, toast } from './ui.js';
 import { onDrag } from './input.js';
 import { play } from './audio.js';
 
@@ -8,6 +8,7 @@ const COLORS = ['#3a302a', '#ffffff', '#e2603f', '#f1c45a', '#7fae6a', '#5f8fc4'
 const SIZES = [4, 10, 22];
 
 // 2択のポップアップ → 結果 { image, self } または null
+// 魔法のペンの一覧の先頭には、いつも「見本を見せる」（写真・画像を見本に、ペンが描く：設計書 2.5）がある
 // closable：途中の画面に「閉じる」を出すか（はじめかたでは出さない。戻るボタンで行き来する）
 // extra：最初の画面の下に足すボタン（data-act は onExtra で受ける）
 export function drawFlow({ title, gallery = [], base = null, note = '', closable = true, extra = '', onExtra = null }) {
@@ -19,7 +20,7 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         ${note ? `<p class="note">${esc(note)}</p>` : ''}
         <div class="two-choice">
           <button class="choice dark" data-act="self">${icon('pen', 44)}<b>自分で描く</b><small>描いたものには、いいことがあります</small></button>
-          ${gallery.length ? `<button class="choice" data-act="pen">${icon('magic', 44)}<b>魔法のペンにおまかせ</b><small>あとから描き直せます</small></button>` : ''}
+          ${gallery ? `<button class="choice" data-act="pen">${icon('magic', 44)}<b>魔法のペンにおまかせ</b><small>好きな絵を描いてもらえます</small></button>` : ''}
         </div>${extra}`, {
         closable,
         onAct: async act => {
@@ -33,16 +34,24 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
     const pickPen = () => {
       modal(`
         <h2>どれを描いてもらう？</h2>
-        <div class="pen-grid">${gallery.map((g, i) => `<button class="pen-item" data-act="pick" data-i="${i}"><img src="${g.src}" alt="" draggable="false"><span>${esc(g.name)}</span></button>`).join('')}</div>
+        <div class="pen-grid"><button class="pen-item sample" data-act="sample">${icon('sample', 54)}<span>見本を見せる<small>写真・画像から</small></span></button>${gallery.map((g, i) => `<button class="pen-item" data-act="pick" data-i="${i}"><img src="${g.src}" alt="" draggable="false"><span>${esc(g.name)}</span></button>`).join('')}</div>
         <button class="btn" data-act="back">もどる</button>`, {
         wide: true, closable,
         onAct: (act, el) => {
           if (act === 'close') return resolve(null);
           if (act === 'back') return choose();
           if (act === 'pick') magic(gallery[+el.dataset.i]);
+          if (act === 'sample') pickSample(file => sample(file));
         },
       });
     };
+    // 見本：写真・画像を選ぶ → 512×512 に収める → いつものシャカシャカで描いてもらう
+    const sample = async file => {
+      let base;
+      try { base = await loadSample(file); } catch { return toast('この画像は読み込めませんでした'); }
+      magic({ name: '見本の絵', src: toImage(base), sample: base });
+    };
+    // 魔法のペンが描いた絵には手を入れない（設計書 2.7）。描き上がりは「これにする／ほかの絵にする」だけ
     const magic = g => {
       modal(`
         <h2>${esc(g.name)}</h2>
@@ -53,17 +62,21 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
         modal(`
           <h2>${esc(g.name)}</h2>
           <div class="paper"><img class="fadein" src="${g.src}" alt="" draggable="false"></div>
-          <div class="row-end">
-            <button class="btn" data-act="back">ほかの絵にする</button>
-            <button class="btn" data-act="redraw">自分で描き直す</button>
-          </div>
-          <button class="btn primary wide" data-act="ok">これにする</button>`, {
+          ${g.sample ? '<button class="btn wide toggle" data-act="white" aria-pressed="false">白いところを消す</button>' : ''}
+          <button class="btn primary wide" data-act="ok">これにする</button>
+          <button class="btn wide" data-act="back">ほかの絵にする</button>`, {
           closable,
-          onAct: async act => {
+          onAct: async (act, el) => {
             if (act === 'close') return resolve(null);
             if (act === 'back') return pickPen();
-            if (act === 'ok') done({ image: g.src, self: false, name: g.name, pen: g });
-            if (act === 'redraw') { closeModal(); const img = await openEditor({ title, base: g.src }); resolve(img ? { image: img, self: true } : null); }
+            if (act === 'white') { // 紙を撮った写真の白い背景を透明に（切り替え）
+              const on = el.getAttribute('aria-pressed') !== 'true';
+              el.setAttribute('aria-pressed', on);
+              g.src = toImage(on ? eraseWhite(g.sample) : g.sample);
+              document.querySelector('.sheet .paper img').src = g.src;
+              return;
+            }
+            if (act === 'ok') done(g.sample ? { image: g.src, self: false, name: '', sample: true } : { image: g.src, self: false, name: g.name, pen: g });
           },
         });
       }, 1300);
@@ -72,7 +85,8 @@ export function drawFlow({ title, gallery = [], base = null, note = '', closable
   });
 }
 
-// 全画面のお絵かき（HUDは隠す）。base があればそれを下に敷いて描き足す
+// 全画面のお絵かき（HUDは隠す）。base があればそれを下に敷いて描き足す。
+// base に渡してよいのは自分で描いた絵だけ（魔法のペンの絵には手を入れない：設計書 2.7）
 export function openEditor({ title, base = null }) {
   return new Promise(resolve => {
     const root = $('#editor');
@@ -141,4 +155,55 @@ export function openEditor({ title, base = null }) {
       }
     };
   });
+}
+
+// ---- 見本を見せる（設計書 2.5） ----
+const SAMPLE_MAX = 20 * 1024 * 1024; // これより大きいファイルは読まない
+
+// 端末のファイル選択（スマホでは写真の一覧やカメラ）を開く。タップの中で呼ぶこと
+export function pickSample(onFile) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = () => {
+    const f = input.files?.[0];
+    if (!f) return;
+    if (f.size > SAMPLE_MAX) return toast('画像が大きすぎます');
+    onFile(f);
+  };
+  input.click();
+}
+
+// 画像を 512×512 のキャンバスに、縦横の比を保って収める（透明な部分はそのまま）
+export async function loadSample(file) {
+  let src;
+  try { src = await createImageBitmap(file); } catch {
+    src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+  }
+  const w = src.width, h = src.height;
+  if (!w || !h) throw new Error('empty');
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  const k = Math.min(496 / w, 496 / h);
+  cv.getContext('2d').drawImage(src, (512 - w * k) / 2, (512 - h * k) / 2, w * k, h * k);
+  return cv;
+}
+
+// 白っぽいところを透明にした写しを返す（元のキャンバスは変えない）。白とのあいだは少しぼかす
+export function eraseWhite(cv) {
+  const out = document.createElement('canvas'); out.width = cv.width; out.height = cv.height;
+  const ctx = out.getContext('2d'); ctx.drawImage(cv, 0, 0);
+  const img = ctx.getImageData(0, 0, out.width, out.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lo = Math.min(d[i], d[i + 1], d[i + 2]), hi = Math.max(d[i], d[i + 1], d[i + 2]);
+    if (hi - lo > 40) continue; // 色のついたところは残す
+    const t = (lo - 200) / 35; // 200 以下は残す、235 以上は消す
+    if (t > 0) d[i + 3] = Math.round(d[i + 3] * Math.max(0, 1 - t));
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
+}
+
+// セーブに入れる文字列にする。写真は重いので、使える端末では WebP（透明も残る）にする
+export function toImage(cv) {
+  const webp = cv.toDataURL('image/webp', 0.9);
+  return webp.startsWith('data:image/webp') ? webp : cv.toDataURL('image/png');
 }
