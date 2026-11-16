@@ -114,11 +114,12 @@ try {
   await page.click('#sketchbook-btn'); await wait(300);
   const items = await page.locator('.sketch-grid .pen-item').count();
   check(r, 'スケッチブックに、これまでの絵が並ぶ', items >= 2, `${items} 枚`);
-  check(r, 'スケッチブックの先頭は、いまの相棒（魔法のペンの印つき）', (await page.textContent('.sketch-grid .pen-item:first-child')).includes('相棒') && await page.locator('.sketch-grid .pen-item:first-child .pen-mark').count());
+  check(r, 'スケッチブックの先頭は、いまの相棒（魔法のペンの子なので印はない）', (await page.textContent('.sketch-grid .pen-item:first-child')).includes('相棒') && !(await page.locator('.sketch-grid .pen-item:first-child .self-mark').count()));
   await page.click('.sketch-grid .pen-item:first-child'); await wait(200);
   check(r, '魔法のペンの絵は保存・共有できない', !(await page.locator('[data-act="save"], [data-act="share"]').count()) && (await page.textContent('.sheet')).includes('保存・共有できません'));
   await page.click('[data-act="back"]'); await wait(200);
-  await page.locator('.sketch-grid .pen-item', { hasText: 'ポスター' }).filter({ hasNot: page.locator('.pen-mark') }).first().click(); await wait(200);
+  check(r, '自分で描いた絵には、ペンの印がつく', await page.locator('.sketch-grid .pen-item', { hasText: 'ポスター' }).locator('.self-mark').count());
+  await page.locator('.sketch-grid .pen-item', { hasText: 'ポスター' }).filter({ has: page.locator('.self-mark') }).first().click(); await wait(200);
   const [download] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.click('[data-act="save"]')]);
   check(r, '自分で描いた絵は、背景が透明な画像として保存できる', /\.png$/.test(download.suggestedFilename()), download.suggestedFilename());
   await page.screenshot({ path: OUT + 'smoke-sketch.png' });

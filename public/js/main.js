@@ -371,8 +371,8 @@ function sketchbook() {
   const dayNote = x => x.day == null ? '' : x.kind === 'before' ? `${x.day}日めまで` : x.kind === 'farewell' ? `${x.day}日めにお別れ` : `${x.day}日め`;
   modal(`<h2>スケッチブック</h2>${list.length ? `<div class="pen-grid sketch-grid">${list.map((x, i) => `
       <button class="pen-item" data-act="open" data-i="${i}"><img src="${x.image}" alt="" draggable="false">
-        <span>${esc(x.name || SKETCH_KINDS[x.kind])}<small>${SKETCH_KINDS[x.kind]}${dayNote(x) ? ` · ${dayNote(x)}` : ''}</small></span>
-        ${x.self ? '' : `<i class="pen-mark" title="魔法のペンが描いた絵">${icon('magic', 16)}</i>`}</button>`).join('')}</div>`
+        <span>${esc(x.name || SKETCH_KINDS[x.kind])}<small>${SKETCH_KINDS[x.kind]}</small>${dayNote(x) ? `<small>${dayNote(x)}</small>` : ''}</span>
+        ${x.self ? `<i class="self-mark" title="自分で描いた絵">${icon('pen', 16)}</i>` : ''}</button>`).join('')}</div>`
     : '<p class="note">描いた絵が、ここに並びます。</p>'}`, {
     wide: true,
     onAct: (a, el) => { if (a === 'open') sketch(list[+el.dataset.i]); },
