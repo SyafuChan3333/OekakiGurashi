@@ -32,13 +32,19 @@ check('自分で描き直すと、手直しできるようになる', S.canTouch
 check('描き直し前の絵は、ペンの絵かどうかを覚えている', pp.memories.at(-1).self === false && pp.memories.at(-2).self === false);
 
 // スケッチブック：自分で描いた絵だけ保存・共有できる。はじめからある料理・商品は並ばない（設計書 2.6・2.7）
+// 描いた時刻がぶつからないように、時計を1秒ずつ進める
+const realNow = Date.now; let clock = 1.7e12; Date.now = () => (clock += 1000);
 const sb = S.newState(); S.createPet(sb, { name: 'しろ', personality: 'playful', image: 'data:image/png;base64,me', self: true });
 sb.day = 2; S.addDish(sb, { name: 'くまパン', cat: 'sweet', image: 'data:image/png;base64,dish', self: true, price: 200 });
 sb.day = 3; S.addShopItem(sb, { kind: 'toy', toy: 'ball', name: 'ペンのボール', image: 'assets/pen/toy-ball.svg', self: false });
 S.touchUpPet(sb, 'assets/pen/cat3.png', false);
 const book = S.sketchbook(sb);
 check('スケッチブックに描いた絵が並ぶ（はじめからの料理・商品は並ばない）', book.length === 4, book.map(x => `${x.kind}:${x.day}`).join(' '));
-check('スケッチブックは、いまの相棒が先頭で、ほかは新しい順', book[0].kind === 'pet' && book.at(-1).kind === 'dish', book.map(x => x.kind).join(' '));
+// 描いた時刻の古い順（設計書 2.6）。描き直す前の相棒は、最初に描いた時刻の位置。いまの相棒は描き直した時刻の位置
+check('スケッチブックは描いた時刻の古い順（いまの相棒も先頭に固定しない）', book.map(x => x.kind).join(' ') === 'before dish toy pet', book.map(x => x.kind).join(' '));
+const legacy = S.sketchbook({ ...sb, memories: [...sb.memories, { kind: 'farewell', name: '昔の子', image: 'data:old', self: true, day: 1 }] });
+check('描いた時刻の記録がない絵は、いちばん古い側にまとめる', legacy[0].name === '昔の子');
+Date.now = realNow;
 check('魔法のペンの絵は保存・共有できない', book.filter(x => !x.self).every(x => x.image.startsWith('assets/pen/')) && book.some(x => x.self));
 
 // ポスター：描いたものはためておき、どれを飾るか選ぶ。カフェのメニューと同じく12枚まで（設計書 3.9）

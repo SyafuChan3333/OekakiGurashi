@@ -116,7 +116,9 @@ try {
   await page.click('#sketchbook-btn'); await wait(300);
   const items = await page.locator('.sketch-grid .pen-item').count();
   check(r, 'スケッチブックに、これまでの絵が並ぶ', items >= 2, `${items} 枚`);
-  check(r, 'スケッチブックの先頭は、いまの相棒（魔法のペンの子なので印はない）', (await page.textContent('.sketch-grid .pen-item:first-child')).includes('相棒') && !(await page.locator('.sketch-grid .pen-item:first-child .self-mark').count()));
+  // 描いた時刻の古い順（設計書 2.6）：最初に迎えた相棒が先頭、最後に自分で描いたポスターが最後
+  check(r, 'スケッチブックは古い順（先頭はいまの相棒、魔法のペンの子なので印はない）', (await page.textContent('.sketch-grid .pen-item:first-child')).includes('いまの相棒') && !(await page.locator('.sketch-grid .pen-item:first-child .self-mark').count()));
+  check(r, 'スケッチブックの最後は、最後に描いたポスター（自分で描いた印つき）', (await page.textContent('.sketch-grid .pen-item:last-child')).includes('かざっている') && await page.locator('.sketch-grid .pen-item:last-child .self-mark').count());
   await page.click('.sketch-grid .pen-item:first-child'); await wait(200);
   check(r, '魔法のペンの絵は保存・共有できない', !(await page.locator('[data-act="save"], [data-act="share"]').count()) && (await page.textContent('.sheet')).includes('保存・共有できません'));
   await page.click('[data-act="back"]'); await wait(200);

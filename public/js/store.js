@@ -17,7 +17,7 @@ export function newState() {
     care: { dirty: 0, sick: 0, lonely: 0, status: 'ok' }, // status: ok | sick | escaped | gone
     shop: SHOP_START.map(x => ({ ...x, self: false })), // コンビニの商品
     bag: { 's-cookie': 2, 's-ball': 1 }, // 持ち物（はじめはクッキー2つとボール） { 商品id: 個数 }。おもちゃは1つあれば何度でも遊べる
-    posters: [],          // 描いたポスター [{ id, image, self, drawnDay, pen? }]（設計書 3.9）
+    posters: [],          // 描いたポスター [{ id, image, self, drawnDay, drawnAt, pen? }]（設計書 3.9）
     poster: null,         // 飾っているポスターの id（なければ null）
     house: 'washitsu',
     owned: ['washitsu'],
@@ -142,7 +142,7 @@ export function buyItem(s, id) {
 export function addShopItem(s, { kind, toy, name, image, self }) {
   if (shopFull(s)) throw Error(`商品は${SHOP_MAX}個までです`);
   const base = NEW_ITEM_PRICE[kind];
-  const it = { id: 's-' + Date.now().toString(36), kind, name, image, self, drawnDay: s.day, price: self ? Math.round(base * SELF_DISCOUNT) : base, ...(kind === 'toy' ? { toy } : {}) };
+  const it = { id: 's-' + Date.now().toString(36), kind, name, image, self, drawnDay: s.day, drawnAt: Date.now(), price: self ? Math.round(base * SELF_DISCOUNT) : base, ...(kind === 'toy' ? { toy } : {}) };
   s.shop.push(it);
   return it;
 }
@@ -212,7 +212,7 @@ export function bringBack(s) { s.care.status = 'ok'; s.care.lonely = 0; gain(s, 
 
 function farewell(s) {
   s.care.status = 'gone';
-  s.memories.push({ kind: 'farewell', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day });
+  s.memories.push({ kind: 'farewell', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day, drawnAt: s.pet.drawnAt ?? null });
 }
 export function startOver(s) {
   const keep = { shop: s.shop, bag: s.bag, coins: s.coins, house: s.house, owned: s.owned, cafe: s.cafe, memories: s.memories, served: s.served, sound: s.sound, volume: s.volume, day: s.day };
@@ -221,17 +221,18 @@ export function startOver(s) {
 
 // ---- 相棒 ----
 export function createPet(s, { name, personality, image, self }) {
-  s.pet = { name, personality, image, self, createdDay: s.day, drawnDay: s.day };
+  s.pet = { name, personality, image, self, createdDay: s.day, drawnDay: s.day, drawnAt: Date.now() };
   s.started = true;
 }
 // 名前と性格は固定。絵は手直しのみ。はじめの3日間だけ白紙から描き直せる（3.6）
 export const canRedrawFresh = s => s.day - (s.pet?.createdDay ?? s.day) < 3;
 // 相棒の絵を替える。手直し（自分で描いた子に描き足す）と、はじめの3日間の描き直し（自分で描く／魔法のペン）の両方
 export function touchUpPet(s, image, self = true) {
-  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day });
+  s.memories.push({ kind: 'before', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day, drawnAt: s.pet.drawnAt ?? null }); // 描いた時刻は前の絵のまま引き継ぐ
   s.pet.image = image;
   s.pet.self = self;
   s.pet.drawnDay = s.day;
+  s.pet.drawnAt = Date.now();
 }
 // 手直し（描き足し）できるのは、自分で描いた子だけ（設計書 2.7）
 export const canTouchUp = s => !!s.pet?.self;
@@ -273,6 +274,7 @@ export function addDish(s, { name, cat, image, self, price }) {
   if (menuFull(s)) throw Error(`メニューは${MENU_MAX}品までです`);
   const m = { id: 'm-' + Date.now().toString(36), name, cat, price, image, self, drawnDay: s.day, sold: 0 };
   s.cafe.menu.push(m);
+  m.drawnAt = Date.now(); // 描いた時刻（スケッチブックの並べ替え用：設計書 2.6）
   return m;
 }
 // ---- ポスター（設計書 3.9。カフェのメニューと同じ扱い：12枚まで、いっぱいなら足せない） ----
@@ -284,7 +286,7 @@ export function addPoster(s, { image, self, pen = null }) {
   const same = !self && pen && s.posters.find(p => p.pen === pen);
   if (same) { s.poster = same.id; return same; }
   if (posterFull(s)) throw Error(`ポスターは${POSTER_MAX}枚までです`);
-  const p = { id: 'p-' + Date.now().toString(36), image, self, drawnDay: s.day, ...(pen ? { pen } : {}) };
+  const p = { id: 'p-' + Date.now().toString(36), image, self, drawnDay: s.day, drawnAt: Date.now(), ...(pen ? { pen } : {}) };
   s.posters.push(p);
   s.poster = p.id;
   return p;
@@ -315,21 +317,23 @@ export function moveHouse(s, id) {
 }
 
 // ---- スケッチブック（設計書 2.6） ----
-// これまでの絵を、セーブの中から集める（絵を二重に持たない）。いまの相棒が先頭、ほかは新しい順。
+// これまでの絵を、セーブの中から集める（絵を二重に持たない）。
+// 並べ方は「描いた時刻（drawnAt）の古い順」だけ。種類や、いまの相棒かどうかで並びを変えない。
+// 描いた時刻の記録がない絵（記録を始める前の絵）は、いちばん古い側にまとめる（その中は描いた日の古い順）。
 // 並ぶのは：いまの相棒・描き直す前の相棒・お別れした子・自分で足した料理と商品・ポスター
 // はじめからある料理と商品は、遊ぶ人が描いたものではないので並べない（描いた日を持たないもので見分ける）
 // 保存・共有できるのは自分で描いた絵だけ（self が true のもの。わからないものはできない：設計書 2.7）
 export function sketchbook(s) {
   const list = [];
-  const add = (kind, it, day, note = '') => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null, note });
+  const add = (kind, it, day, note = '') => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null, note, at: it.drawnAt ?? null });
   if (s.pet) add('pet', s.pet, s.pet.drawnDay ?? s.pet.createdDay);
   for (const m of s.memories) add(m.kind === 'farewell' ? 'farewell' : 'before', m, m.day);
   for (const m of s.cafe.menu) if (m.drawnDay != null || m.self) add('dish', m, m.drawnDay);
   for (const it of s.shop) if (it.drawnDay != null || it.self) add(it.kind === 'toy' ? 'toy' : 'food', it, it.drawnDay);
   for (const p of s.posters) add('poster', { ...p, name: 'ポスター' }, p.drawnDay, p.id === s.poster ? 'かざっている' : ''); // 飾っている1枚は種類の欄に添える
-  // いまの相棒をいつも先頭に。ほかは新しい順（描いた日がわからないものは最後）
-  const [pet, ...rest] = s.pet ? list : [null, ...list];
-  const sorted = rest.map((x, i) => ({ ...x, i })).sort((a, b) => (b.day ?? -1) - (a.day ?? -1) || b.i - a.i).map(({ i, ...x }) => x);
-  return pet ? [pet, ...sorted] : sorted;
+  const key = x => [x.at == null ? 0 : 1, x.at ?? x.day ?? -1]; // 時刻がないものが先（古い側）
+  return list.map((x, i) => ({ ...x, i }))
+    .sort((a, b) => { const [ka, va] = key(a), [kb, vb] = key(b); return ka - kb || va - vb || a.i - b.i; })
+    .map(({ i, at, ...x }) => x);
 }
-export const SKETCH_KINDS = { pet: '相棒', before: '描き直す前の相棒', farewell: 'お別れした子', dish: '料理', food: 'ごはん', toy: 'おもちゃ', poster: 'ポスター' };
+export const SKETCH_KINDS = { pet: 'いまの相棒', before: '描き直す前の相棒', farewell: 'お別れした子', dish: '料理', food: 'ごはん', toy: 'おもちゃ', poster: 'ポスター' };
