@@ -53,10 +53,10 @@ async function init() {
 
 function go(p) {
   page = p;
-  if (p === 'room') { world.showRoom(house(), state.poster?.image); setScene('room'); }
+  if (p === 'room') { world.showRoom(house(), S.currentPoster(state)?.image); setScene('room'); }
   if (p === 'cafe') { world.showCafe(state.cafe.level); world.setGuest(guestPic()); setScene('cafe'); syncCafe(); say('guest', esc(S.guest(state).ask), 0); }
   if (p === 'shop') { world.showShop(); world.setGuest('assets/pen/cat7.png'); setScene('room'); say('guest', 'いらっしゃいませ〜', 2500); }
-  if (p === 'house') { houseView = HOUSES.findIndex(h => h.id === state.house); world.showRoom(HOUSES[houseView], state.poster?.image); }
+  if (p === 'house') { houseView = HOUSES.findIndex(h => h.id === state.house); world.showRoom(HOUSES[houseView], S.currentPoster(state)?.image); }
   if (p !== 'cafe' && p !== 'shop') say('guest', '');
   say('pet', '');
   syncPet();
@@ -200,7 +200,7 @@ async function act(a) {
   if (a === 'next') { S.nextGuest(state); world.setGuest(guestPic()); syncCafe(); say('guest', esc(S.guest(state).ask), 0); }
   if (a === 'prev' || a === 'fwd') {
     houseView = (houseView + (a === 'fwd' ? 1 : -1) + HOUSES.length) % HOUSES.length;
-    world.showRoom(HOUSES[houseView], state.poster?.image); syncPet();
+    world.showRoom(HOUSES[houseView], S.currentPoster(state)?.image); syncPet();
   }
   if (a === 'leave') return go('room');
   if (a === 'live') {
@@ -245,21 +245,43 @@ async function touchUp() {
 // ---- 模様替え（ポスターと引っ越しをまとめる） ----
 function remodelMenu() {
   modal(`<h2>模様替え</h2><div class="list">
-    <button class="btn wide" data-act="poster">${icon('frame', 20)} ポスターを描く</button>
+    <button class="btn wide" data-act="poster">${icon('frame', 20)} ポスター</button>
     <button class="btn wide" data-act="move">${icon('house', 20)} 引っ越し先を見る</button>
   </div>`, {
     onAct: async a => {
       if (a === 'close') return;
       closeModal();
       if (a === 'move') return go('house');
-      if (a === 'poster') {
+      if (a === 'poster') posterMenu();
+    },
+  });
+}
+// ---- ポスター（設計書 3.9）：描いたものはためておき、どれを飾るか選ぶ。カフェのメニューと同じ扱い ----
+function posterMenu() {
+  const full = S.posterFull(state), list = [...state.posters].reverse(); // 新しい順
+  modal(`<h2>ポスター</h2>
+    ${list.length ? `<div class="pen-grid">${list.map(p => `<button class="pen-item ${p.id === state.poster ? 'on' : ''}" data-act="hang" data-id="${p.id}"><img src="${p.image}" alt="" draggable="false">
+      <span>${p.id === state.poster ? 'かざっている' : 'かざる'}${p.drawnDay != null ? `<small>${p.drawnDay}日め</small>` : ''}</span>
+      ${p.self ? `<i class="self-mark" title="自分で描いた絵">${icon('pen', 16)}</i>` : ''}</button>`).join('')}</div>` : '<p class="note">描いたポスターが、ここに並びます。</p>'}
+    <button class="btn wide" data-act="new" ${full ? 'disabled' : ''}>${icon('pen', 20)} 新しいポスターを描く</button>
+    ${full ? `<p class="note">ポスターは${S.POSTER_MAX}枚までです。</p>` : ''}
+    ${state.poster ? '<button class="btn wide" data-act="off">はずす</button>' : ''}`, {
+    wide: true,
+    onAct: async (a, el) => {
+      if (a === 'hang') { S.hangPoster(state, el.dataset.id); world.setPoster(S.currentPoster(state).image); closeModal(); await persist(); }
+      if (a === 'off') { S.hangPoster(state, null); world.setPoster(null); closeModal(); await persist(); }
+      if (a === 'new') {
+        closeModal();
         const r = await drawFlow({ title: 'おへやのポスター', gallery: PEN_POSTERS });
-        if (r) { state.poster = { image: r.image, self: r.self, drawnDay: state.day }; world.setPoster(r.image); if (r.self) say('pet', 'きみの絵だ！ かざってくれたんだ'); await persist(); }
+        if (!r) return posterMenu();
+        S.addPoster(state, { image: r.image, self: r.self, pen: r.pen?.src || null });
+        world.setPoster(r.image);
+        if (r.self) say('pet', 'きみの絵だ！ かざってくれたんだ');
+        await persist();
       }
     },
   });
 }
-
 // ---- バッグ ----
 const itemCard = (it, extra, act) => `<button class="pen-item" data-act="${act}" data-id="${it.id}"><img src="${it.image}" alt="" draggable="false"><span>${esc(it.name)}${it.self ? ' ✎' : ''}<br><small>${extra}</small></span></button>`;
 function bagMenu() {

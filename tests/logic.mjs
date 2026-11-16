@@ -41,6 +41,22 @@ check('スケッチブックに描いた絵が並ぶ（はじめからの料理�
 check('スケッチブックは、いまの相棒が先頭で、ほかは新しい順', book[0].kind === 'pet' && book.at(-1).kind === 'dish', book.map(x => x.kind).join(' '));
 check('魔法のペンの絵は保存・共有できない', book.filter(x => !x.self).every(x => x.image.startsWith('assets/pen/')) && book.some(x => x.self));
 
+// ポスター：描いたものはためておき、どれを飾るか選ぶ。カフェのメニューと同じく12枚まで（設計書 3.9）
+const ps = S.newState();
+const p1 = S.addPoster(ps, { image: 'data:image/png;base64,a', self: true });
+const p2 = S.addPoster(ps, { image: 'assets/pen/poster-sun.svg', self: false, pen: 'assets/pen/poster-sun.svg' });
+check('描いたポスターはためておかれ、最後に描いたものを飾る', ps.posters.length === 2 && S.currentPoster(ps).id === p2.id);
+S.addPoster(ps, { image: 'assets/pen/poster-sun.svg', self: false, pen: 'assets/pen/poster-sun.svg' });
+check('魔法のペンの同じ絵は1枚にまとめる', ps.posters.length === 2);
+S.hangPoster(ps, p1.id); check('前のポスターに飾り替えられる', S.currentPoster(ps).id === p1.id);
+S.hangPoster(ps, null); check('はずせる', S.currentPoster(ps) === null && ps.posters.length === 2);
+for (let i = 0; ps.posters.length < S.POSTER_MAX; i++) S.addPoster(ps, { image: 'data:x' + i, self: true });
+let threw = false; try { S.addPoster(ps, { image: 'data:over', self: true }); } catch { threw = true; }
+check(`ポスターは${S.POSTER_MAX}枚まで`, S.posterFull(ps) && threw);
+const old = S.upgrade({ ...S.newState(), posters: undefined, poster: { image: 'data:old', self: true, drawnDay: 2 } });
+check('以前のセーブのポスターは、一覧の1枚目に移して飾ったまま', old.posters.length === 1 && S.currentPoster(old)?.image === 'data:old');
+check('スケッチブックに、ためたポスターが全部並ぶ', S.sketchbook(ps).filter(x => x.kind === 'poster').length === S.POSTER_MAX);
+
 // カフェ：出来ばえ「よい」でチップ
 const c = S.newState(); S.createPet(c, { name: 'c', personality: 'playful', image: 'x', self: false });
 c.cafe.guestNo = 1; // 飲みものを頼むお客さま（はじめから持っている料理で出せる）

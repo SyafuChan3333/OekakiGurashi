@@ -86,6 +86,7 @@ try {
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('[data-a="remodel"]'); await wait(200);
   await page.click('[data-act="poster"]'); await wait(200);
+  await page.click('[data-act="new"]'); await wait(200);
   await page.click('[data-act="pen"]'); await wait(200);
   check(r, '魔法のペンの一覧の先頭に「見本を見せる」がある', (await page.locator('.pen-grid > :first-child').getAttribute('data-act')) === 'sample');
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act="sample"]')]);
@@ -105,6 +106,7 @@ try {
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('[data-a="remodel"]'); await wait(200);
   await page.click('[data-act="poster"]'); await wait(200);
+  await page.click('[data-act="new"]'); await wait(200);
   await page.click('[data-act="self"]'); await page.waitForSelector('#editor:not([hidden]) .ed-canvas');
   { const b = await page.locator('.ed-canvas').boundingBox();
     await page.mouse.move(b.x + b.width * 0.3, b.y + b.height * 0.3); await page.mouse.down();
@@ -125,6 +127,20 @@ try {
   await page.screenshot({ path: OUT + 'smoke-sketch.png' });
   await page.click('[data-act="back"]'); await wait(200);
   await page.screenshot({ path: OUT + 'smoke-sketchbook.png' });
+  await page.click('.sheet-close'); await wait(200);
+
+  // ポスター：描いたものはためておき、どれを飾るか選ぶ（設計書 3.9）。いまは見本のポスターと自分で描いたポスターの2枚
+  await page.click('[data-a="remodel"]'); await wait(200);
+  await page.click('[data-act="poster"]'); await wait(200);
+  check(r, '描いたポスターが2枚とも残っている', await page.locator('.pen-grid [data-act="hang"]').count() === 2);
+  check(r, '最後に描いたポスターを飾っている（先頭・自分で描いた印つき）', await page.locator('.pen-grid [data-act="hang"]:first-child.on .self-mark').count());
+  await page.click('.pen-grid [data-act="hang"]:nth-child(2)'); await wait(300);
+  await page.click('[data-a="remodel"]'); await wait(200); await page.click('[data-act="poster"]'); await wait(200);
+  check(r, '前のポスターに飾り替えられる', await page.locator('.pen-grid [data-act="hang"]:nth-child(2).on').count());
+  await page.click('[data-act="off"]'); await wait(300);
+  await page.click('[data-a="remodel"]'); await wait(200); await page.click('[data-act="poster"]'); await wait(200);
+  check(r, 'はずすと何も飾らず、2枚とも残る', !(await page.locator('.pen-grid .on').count()) && await page.locator('.pen-grid [data-act="hang"]').count() === 2);
+  await page.screenshot({ path: OUT + 'smoke-posters.png' });
   await page.click('.sheet-close'); await wait(200);
 
   // 魔法のペンの子：はじめの3日間は描き直せる。描き上がりに「自分で描き直す」はない。4日目からは手直しも出ない（設計書 2.7）
