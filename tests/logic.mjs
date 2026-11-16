@@ -66,6 +66,13 @@ S.pickDish(c, dish.id); S.applyCook(c, { done: true, quality: 'good' });
 const sale = S.serveDish(c);
 check('「よい」でチップがつく', sale.tip > 0, `売上 ${sale.total}・チップ ${sale.tip}`);
 
+// 上限：いっぱいのときは描く前に止められるよう、いっぱいかどうかを先に知れる
+const mf = S.newState(); S.createPet(mf, { name: 'm', personality: 'playful', image: 'x', self: false });
+while (!S.menuFull(mf)) S.addDish(mf, { name: 'd' + mf.cafe.menu.length, cat: 'sweet', image: 'x', self: true, price: 100 });
+check(`メニューは${S.MENU_MAX}品でいっぱい`, mf.cafe.menu.length === S.MENU_MAX);
+while (!S.shopFull(mf)) S.addShopItem(mf, { kind: 'food', name: 'f', image: 'x', self: true });
+check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX);
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;
