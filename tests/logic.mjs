@@ -41,13 +41,6 @@ check('スケッチブックに描いた絵が並ぶ（はじめからの料理�
 check('スケッチブックは、いまの相棒が先頭で、ほかは新しい順', book[0].kind === 'pet' && book.at(-1).kind === 'dish', book.map(x => x.kind).join(' '));
 check('魔法のペンの絵は保存・共有できない', book.filter(x => !x.self).every(x => x.image.startsWith('assets/pen/')) && book.some(x => x.self));
 
-// 上限：いっぱいのときは描く前に止められるよう、いっぱいかどうかを先に知れる
-const mf = S.newState(); S.createPet(mf, { name: 'm', personality: 'playful', image: 'x', self: false });
-while (!S.menuFull(mf)) S.addDish(mf, { name: 'd' + mf.cafe.menu.length, cat: 'sweet', image: 'x', self: true, price: 100 });
-check(`メニューは${S.MENU_MAX}品でいっぱい`, mf.cafe.menu.length === S.MENU_MAX);
-while (!S.shopFull(mf)) S.addShopItem(mf, { kind: 'food', name: 'f', image: 'x', self: true });
-check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX);
-
 // カフェ：出来ばえ「よい」でチップ
 const c = S.newState(); S.createPet(c, { name: 'c', personality: 'playful', image: 'x', self: false });
 c.cafe.guestNo = 1; // 飲みものを頼むお客さま（はじめから持っている料理で出せる）
@@ -56,6 +49,13 @@ check('注文に合う料理がある', !!dish);
 S.pickDish(c, dish.id); S.applyCook(c, { done: true, quality: 'good' });
 const sale = S.serveDish(c);
 check('「よい」でチップがつく', sale.tip > 0, `売上 ${sale.total}・チップ ${sale.tip}`);
+
+// 上限：いっぱいのときは描く前に止められるよう、いっぱいかどうかを先に知れる
+const mf = S.newState(); S.createPet(mf, { name: 'm', personality: 'playful', image: 'x', self: false });
+while (!S.menuFull(mf)) S.addDish(mf, { name: 'd' + mf.cafe.menu.length, cat: 'sweet', image: 'x', self: true, price: 100 });
+check(`メニューは${S.MENU_MAX}品でいっぱい`, mf.cafe.menu.length === S.MENU_MAX);
+while (!S.shopFull(mf)) S.addShopItem(mf, { kind: 'food', name: 'f', image: 'x', self: true });
+check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX);
 
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
