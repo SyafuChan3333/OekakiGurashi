@@ -393,7 +393,7 @@ function sketchbook() {
   const dayNote = x => x.day == null ? '' : x.kind === 'before' ? `${x.day}日めまで` : x.kind === 'farewell' ? `${x.day}日めにお別れ` : `${x.day}日め`;
   modal(`<h2>スケッチブック</h2>${list.length ? `<div class="pen-grid sketch-grid">${list.map((x, i) => `
       <button class="pen-item" data-act="open" data-i="${i}"><img src="${x.image}" alt="" draggable="false">
-        <span>${esc(x.name || SKETCH_KINDS[x.kind])}<small>${SKETCH_KINDS[x.kind]}</small>${dayNote(x) ? `<small>${dayNote(x)}</small>` : ''}</span>
+        <span>${esc(x.name || SKETCH_KINDS[x.kind])}<small>${x.note || SKETCH_KINDS[x.kind]}</small>${dayNote(x) ? `<small>${dayNote(x)}</small>` : ''}</span>
         ${x.self ? `<i class="self-mark" title="自分で描いた絵">${icon('pen', 16)}</i>` : ''}</button>`).join('')}</div>`
     : '<p class="note">描いた絵が、ここに並びます。</p>'}`, {
     wide: true,
@@ -404,7 +404,7 @@ function sketch(x) {
   const canShare = x.self && navigator.canShare?.({ files: [new File([''], 'a.png', { type: 'image/png' })] });
   modal(`<h2>${esc(x.name || SKETCH_KINDS[x.kind])}</h2>
     <div class="paper"><img src="${x.image}" alt="" draggable="false"></div>
-    <p class="note">${SKETCH_KINDS[x.kind]}${x.day == null ? '' : ` · ${x.day}日め`}${x.self ? ' · 自分で描いた絵' : ' · 魔法のペンが描いた絵'}</p>
+    <p class="note">${SKETCH_KINDS[x.kind]}${x.note ? `（${x.note}）` : ''}${x.day == null ? '' : ` · ${x.day}日め`}${x.self ? ' · 自分で描いた絵' : ' · 魔法のペンが描いた絵'}</p>
     ${x.self ? `${canShare ? '<button class="btn primary wide" data-act="share">共有する</button>' : ''}
       <button class="btn wide${canShare ? '' : ' primary'}" data-act="save">保存する</button>`
       : '<p class="note">魔法のペンが描いた絵は、保存・共有できません。</p>'}

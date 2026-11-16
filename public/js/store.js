@@ -318,12 +318,12 @@ export function moveHouse(s, id) {
 // 保存・共有できるのは自分で描いた絵だけ（self が true のもの。わからないものはできない：設計書 2.7）
 export function sketchbook(s) {
   const list = [];
-  const add = (kind, it, day) => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null, at: it.drawnAt ?? null });
+  const add = (kind, it, day, note = '') => list.push({ kind, name: it.name || '', image: it.image, self: it.self === true, day: day ?? null, note, at: it.drawnAt ?? null });
   if (s.pet) add('pet', s.pet, s.pet.drawnDay ?? s.pet.createdDay);
   for (const m of s.memories) add(m.kind === 'farewell' ? 'farewell' : 'before', m, m.day);
   for (const m of s.cafe.menu) if (m.drawnDay != null || m.self) add('dish', m, m.drawnDay);
   for (const it of s.shop) if (it.drawnDay != null || it.self) add(it.kind === 'toy' ? 'toy' : 'food', it, it.drawnDay);
-  for (const p of s.posters) add('poster', { ...p, name: p.id === s.poster ? 'かざっているポスター' : 'ポスター' }, p.drawnDay);
+  for (const p of s.posters) add('poster', { ...p, name: 'ポスター' }, p.drawnDay, p.id === s.poster ? 'かざっている' : ''); // 飾っている1枚は種類の欄に添える
   const key = x => [x.at == null ? 0 : 1, x.at ?? x.day ?? -1]; // 時刻がないものが先（古い側）
   return list.map((x, i) => ({ ...x, i }))
     .sort((a, b) => { const [ka, va] = key(a), [kb, vb] = key(b); return ka - kb || va - vb || a.i - b.i; })
