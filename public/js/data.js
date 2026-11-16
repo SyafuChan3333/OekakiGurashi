@@ -7,13 +7,15 @@ export const PERSONALITIES = [
   { id: 'clingy', name: 'あまえんぼ', note: 'きみのそばにいたがる', speed: 0.8, wait: [3, 6] },
 ];
 
+// コラボの相棒（1枚絵。魔法のペンの相棒の先頭に並ぶ）。
+// 公開版は 512×512 の縮小版。元の大きい絵と表情の差分は art/collab/ にある（公開しない）
 export const VT_COMPANIONS = [
   { src: 'assets/pen/vt-rotan-happy.png', name: '龍惺ろたん' },
   { src: 'assets/pen/vt-fuwamu-happy.png', name: '宵夢ふわむ' },
   { src: 'assets/pen/vt-miina-happy.png', name: '春霞みぃな' },
-]
+];
 
-// 魔法のペンが描ける絵（仮素材。assets/pen/ のファイルを差し替えれば変わる）
+// 魔法のペンが描ける絵（コラボ以外は仮素材。assets/pen/ のファイルを差し替えれば変わる）
 export const PEN_COMPANIONS = [
   ...VT_COMPANIONS,
   { src: 'assets/pen/human1.svg', name: 'しろ' },

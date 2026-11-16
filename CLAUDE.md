@@ -85,6 +85,7 @@ artifacts は外部スクリプトを CDN からしか読めない・ダウン�
 | `public/vendor/` | three.js（同梱版） |
 | `tests/` | 自動の確認（下）。`public/` の外 |
 | `preview/` | artifacts プレビュー用の差し替え。`public/` の外 |
+| `art/` | 公開しない元の素材（コラボの相棒の大きい絵・差分など）。`public/` の外。詳しくは `art/collab/README.md` |
 | `.github/workflows/pages.yml` | `public/` を GitHub Pages に公開する |
 
 ## テスト
