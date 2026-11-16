@@ -7,8 +7,15 @@ export const PERSONALITIES = [
   { id: 'clingy', name: 'あまえんぼ', note: 'きみのそばにいたがる', speed: 0.8, wait: [3, 6] },
 ];
 
+export const VT_COMPANIONS = [
+  { src: 'assets/pen/vt-rotan-happy.png', name: '龍惺ろたん' },
+  { src: 'assets/pen/vt-fuwamu-happy.png', name: '宵夢ふわむ' },
+  { src: 'assets/pen/vt-miina-happy.png', name: '春霞みぃな' },
+]
+
 // 魔法のペンが描ける絵（仮素材。assets/pen/ のファイルを差し替えれば変わる）
 export const PEN_COMPANIONS = [
+  ...VT_COMPANIONS,
   { src: 'assets/pen/human1.svg', name: 'しろ' },
   { src: 'assets/pen/human2.svg', name: 'あんず' },
   { src: 'assets/pen/human3.svg', name: 'くるみ' },
