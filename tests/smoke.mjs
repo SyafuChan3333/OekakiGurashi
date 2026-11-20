@@ -30,6 +30,7 @@ try {
   check(r, 'もう一度つぎへで確認画面', (await h2()).includes('この子でいい') && (await page.textContent('.sheet')).includes('しろ'));
   await page.click('[data-act="go"]'); await page.waitForSelector('#pet-card');
   check(r, '相棒を迎えると、ステータス欄が出る', await page.locator('#pet-card').count());
+  check(r, 'ステータス欄は数値のバーではなく、気持ちのことば', !(await page.locator('#pet-card .bar').count()) && ['ごきげん', 'ふつう'].includes(await page.textContent('#pet-card .feel')));
   await page.screenshot({ path: OUT + 'smoke-room.png' });
 
   // おへや：バッグのおもちゃ → 遊びのミニゲームが開いて、やめると戻る
@@ -172,11 +173,18 @@ try {
   check(r, '4日目からは、魔法のペンの子に手直しも描き直しも出ない', !(await page.locator('[data-act="touchup"], [data-act="redraw"]').count()) && (await page.textContent('.sheet')).includes('手直しできません'));
   await page.click('.sheet-close'); await wait(200);
 
+  // 気持ち：よごれるとしょんぼり、理由のアイコンが出る（設計書 3.8）
+  await page.click('#settings'); await wait(200);
+  await page.click('details.debug summary'); await page.click('[data-act="dbg-dirty"]'); await wait(1300);
+  check(r, 'よごれると「しょんぼり」と理由が出る', (await page.textContent('#pet-card .feel')) === 'しょんぼり' && (await page.textContent('#pet-card .needs')).includes('よごれている'));
+  await page.screenshot({ path: OUT + 'smoke-feeling.png' });
+
   // 開発用：逃げた状態 → 迎えに行く → やめる
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('#settings'); await wait(200);
   await page.click('details.debug summary'); await page.click('[data-act="dbg-escape"]'); await wait(400);
   check(r, '逃げると知らせが出る', await page.locator('#alert:not([hidden])').count());
+  check(r, '逃げている間は、気持ちではなく「外に出ている」', (await page.textContent('#pet-card .feel')) === '外に出ている');
   await page.click('#alert [data-a="chase"]');
   await page.waitForSelector('#editor:not([hidden]) .mg-canvas');
   check(r, '迎えに行くが始まる', (await page.textContent('.ed-title')).includes('迎えに行く'));

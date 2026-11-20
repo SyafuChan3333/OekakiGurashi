@@ -1,6 +1,6 @@
 import * as S from './store.js';
 import { SKETCH_KINDS } from './store.js';
-import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA, LEGAL, legalSections } from './data.js';
+import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA, LEGAL, legalSections, FEELINGS, NEEDS } from './data.js';
 import { World } from './scene.js';
 import { $, esc, icon, modal, closeModal, modalOpen, toast, say, placeBubbles } from './ui.js';
 import { drawFlow, openEditor } from './draw.js';
@@ -77,7 +77,16 @@ function syncCafe() {
 }
 
 // ---- HUD ----
-const gauge = (label, v, cls) => `<span class="g"><small>${label}</small><i class="bar ${cls}"><b style="width:${v}%"></b></i></span>`;
+// ステータス欄の相棒：数値のバーではなく、気持ちのことばで見せる。しょんぼりのときだけ理由のアイコン（設計書 3.8）
+const AWAY = { escaped: '外に出ている', gone: 'お別れした' };
+const feelingKey = () => `${S.feeling(state)}|${S.needs(state).join()}|${state.care.status}`;
+function petCard() {
+  const f = S.feeling(state), why = f === 'down' ? S.needs(state) : [];
+  const word = f ? FEELINGS[f].name : AWAY[state.care.status] || '';
+  const chips = why.map(k => `<span class="need" title="${NEEDS[k].name}">${icon(NEEDS[k].icon, 16)}<small>${NEEDS[k].name}</small></span>`).join('');
+  return `<button class="card pet-card" id="pet-card" data-feeling="${f || 'away'}" aria-label="${esc(state.pet.name)}のメニュー"><img src="${state.pet.image}" alt="" draggable="false"><div><b>${esc(state.pet.name)}</b><span class="feel">${word}</span>${chips ? `<div class="needs">${chips}</div>` : ''}</div></button>`;
+}
+let shownFeeling = '';
 function renderHUD() {
   $('#coins').textContent = state.coins.toLocaleString();
   $('#day').textContent = `${state.day}日目`;
@@ -86,8 +95,8 @@ function renderHUD() {
   const st = $('#status');
   if (!state.started) { st.innerHTML = ''; }
   else if (page === 'room') {
-    const s = state.stats;
-    st.innerHTML = `<button class="card pet-card" id="pet-card" aria-label="${esc(state.pet.name)}のメニュー"><img src="${state.pet.image}" alt="" draggable="false"><div><b>${esc(state.pet.name)}</b><div class="gs">${gauge('おなか', s.hunger, 'h')}${gauge('ごきげん', s.mood, 'm')}${gauge('なかよし', s.bond, 'b')}</div></div></button>`;
+    st.innerHTML = petCard();
+    shownFeeling = feelingKey();
   } else if (page === 'cafe') {
     const g = S.guest(state), d = state.cafe.menu.find(m => m.id === state.cafe.picked);
     st.innerHTML = `<div class="card ticket"><small>ご注文 · ${CAFE_LEVELS[state.cafe.level].name}</small><b>${esc(g.name)} ／ ${CATEGORIES[g.wants].name}</b><small>${d ? '選んだ料理：' + esc(d.name) : 'メニューから選んでね'}</small></div>`;
@@ -662,7 +671,7 @@ function loop() {
   if (ev === 'dirty-hint') say('pet', LINES.dirty);
   if (!ev && Math.random() < 0.04 && page === 'room' && state.stats.hunger < 30) say('pet', LINES.hungry);
   if (ev || state.care.status === 'sick') renderHUD();
-  else if (page === 'room') document.querySelectorAll('.pet-card .bar b').forEach((b, i) => (b.style.width = [state.stats.hunger, state.stats.mood, state.stats.bond][i] + '%'));
+  else if (page === 'room' && feelingKey() !== shownFeeling) renderHUD();
   if (++saveTick % 10 === 0) persist();
 }
 

@@ -1,5 +1,5 @@
 // ゲームの状態とルール。画面描画からは切り離す（6章）。
-import { PEN_DISHES, STARTER_DISHES, GUESTS, HOUSES, CAFE_LEVELS, HARAHARA, SHOP_START, NEW_ITEM_PRICE, SELF_DISCOUNT } from './data.js';
+import { PEN_DISHES, STARTER_DISHES, GUESTS, HOUSES, CAFE_LEVELS, HARAHARA, SHOP_START, NEW_ITEM_PRICE, SELF_DISCOUNT, FEELING } from './data.js';
 
 const KEY = 'oekaki-kurashi-v2';
 export const clamp = n => Math.max(0, Math.min(100, Math.round(n)));
@@ -127,6 +127,29 @@ export function canAct(s) {
   return null;
 }
 
+// ---- 相棒の気持ち（設計書 3.8）----
+// 気持ちは毎回いまの状態から決め、セーブには入れない。「うれしい」の時刻だけ、セーブの外に覚えておく
+const joyAt = new WeakMap();
+const cheer = s => joyAt.set(s, Date.now());
+// しょんぼりの理由（NEEDS のキー）。ハラハラモードのさみしさは「すねる」に回すので入れない
+export function needs(s) {
+  const c = s.care, list = [];
+  if (c.status === 'sick') list.push('sick');
+  if (s.stats.hunger < FEELING.hungry) list.push('hunger');
+  if (c.dirty >= FEELING.dirty) list.push('dirty');
+  if (c.lonely >= FEELING.lonely && s.mode !== 'harahara') list.push('lonely');
+  return list;
+}
+// いまの気持ち（FEELINGS のキー）。相棒がそこにいないとき（逃げた・お別れした）は null
+export function feeling(s, now = Date.now()) {
+  if (!s.started || !s.pet || s.care.status === 'gone' || s.care.status === 'escaped') return null;
+  if (now - (joyAt.get(s) ?? -Infinity) < FEELING.happySec * 1000) return 'happy';
+  if (s.mode === 'harahara' && s.care.lonely >= FEELING.lonely) return 'sulky';
+  if (needs(s).length) return 'down';
+  if (s.stats.mood >= FEELING.cheerful) return 'cheerful';
+  return 'normal';
+}
+
 // ---- お世話 ----
 // ---- コンビニとバッグ ----
 export const priceOf = item => item.price;
@@ -154,6 +177,7 @@ export function useFood(s, id) {
   s.bag[id]--;
   gain(s, 'hunger', 30);
   gain(s, 'bond', it.self ? 8 : 3);
+  cheer(s);
   return it;
 }
 export function toyFor(s, id) {
@@ -166,6 +190,7 @@ export function pet(s) {
   if (canAct(s)) return false;
   gain(s, 'bond', 2); gain(s, 'mood', 2);
   s.care.lonely = 0;
+  cheer(s);
   return true;
 }
 // ミニゲームの結果を受け取る（3.4）
@@ -175,6 +200,7 @@ export function applyPlay(s, result, toy) {
   gain(s, 'bond', toy?.self ? 9 : 5);
   s.stats.hunger = clamp(s.stats.hunger - 6);
   s.care.lonely = 0;
+  cheer(s);
 }
 export function applyBath(s, result) {
   if (!result.done) return;
@@ -182,6 +208,7 @@ export function applyBath(s, result) {
   if (s.care.status === 'sick') { s.care.status = 'ok'; s.care.sick = 0; }
   gain(s, 'mood', result.quality === 'good' ? 10 : 5);
   gain(s, 'bond', result.quality === 'good' ? 6 : 4);
+  cheer(s);
 }
 
 export function nextDay(s) {
