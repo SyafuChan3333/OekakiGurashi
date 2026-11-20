@@ -10,7 +10,7 @@ s.modeNext = 'harahara';
 check('ハラハラは当日には反映しない', s.mode !== 'harahara');
 S.nextDay(s);
 check('ハラハラは次の日から', s.mode === 'harahara', `倍率 ${S.gainRate(s)}`);
-let events = []; for (let i = 0; i < 400; i++) { const e = S.tick(s, 1); if (e) events.push(e); }
+let events = []; for (let i = 0; i < 1200; i++) { const e = S.tick(s, 1); if (e) events.push(e); }
 check('放っておくと出来事が起きる', events.length > 0, events.join(' → '));
 
 // 逃げた子を連れ戻す

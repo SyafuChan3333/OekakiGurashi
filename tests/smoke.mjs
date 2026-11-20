@@ -179,6 +179,12 @@ try {
   check(r, 'よごれると「しょんぼり」と理由が出る', (await page.textContent('#pet-card .feel')) === 'しょんぼり' && (await page.textContent('#pet-card .needs')).includes('よごれている'));
   await page.screenshot({ path: OUT + 'smoke-feeling.png' });
 
+  // 開発用：お別れの直前にする（知らせの残り秒数が数秒になる）
+  await page.click('#settings'); await wait(200);
+  await page.click('details.debug summary'); await page.click('[data-act="dbg-gone"]'); await wait(400);
+  const left = +((await page.textContent('#alert')).match(/あと(\d+)秒/) || [])[1];
+  check(r, '「お別れの直前にする」で、残りが数秒になる', left > 0 && left <= 5, `あと${left}秒`);
+
   // 開発用：逃げた状態 → 迎えに行く → やめる
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('#settings'); await wait(200);

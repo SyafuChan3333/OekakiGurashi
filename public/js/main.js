@@ -595,6 +595,7 @@ function settings() {
     ${DEBUG ? `<details class="debug"><summary>開発用</summary><div class="list">
       <button class="btn wide" data-act="dbg-escape">逃げた状態にする</button>
       <button class="btn wide" data-act="dbg-sick">具合が悪い状態にする</button>
+      <button class="btn wide" data-act="dbg-gone">お別れの直前にする（ハラハラモードのとき）</button>
       <button class="btn wide" data-act="dbg-dirty">よごれた状態にする（もうすぐ具合が悪くなる）</button>
       <button class="btn wide" data-act="dbg-coins">コイン ＋1000</button>
       <button class="btn wide" data-act="dbg-day">次の日にする</button>
@@ -621,6 +622,7 @@ function settings() {
         const c = state.care;
         if (a === 'dbg-escape') { c.status = 'escaped'; toast('逃げた状態にしました'); }
         if (a === 'dbg-sick') { c.status = 'sick'; c.sick = 0; toast('具合が悪い状態にしました'); }
+        if (a === 'dbg-gone') { c.status = 'sick'; c.sick = HARAHARA.sickToGone - 5; toast('5秒ほどでお別れします（ハラハラモードのとき）'); }
         if (a === 'dbg-dirty') { c.status = 'ok'; c.dirty = HARAHARA.dirtyToSick - 5; toast('5秒ほどで具合が悪くなります（ハラハラモードのとき）'); }
         if (a === 'dbg-coins') { state.coins += 1000; toast('コインを1000ふやしました'); }
         if (a === 'dbg-day') { S.nextDay(state); toast(`${state.day}日目にしました`); }

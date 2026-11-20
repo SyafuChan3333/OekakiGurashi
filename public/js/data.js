@@ -99,9 +99,10 @@ export const PEN_POSTERS = [
 // ハラハラモード（3.5）。時間は試作用に短め
 export const HARAHARA = {
   multiplier: 1.5,
-  dirtyToSick: 120, // 秒
-  sickToGone: 90,
-  lonelyToEscape: 150,
+  // 時計は、おへや・カフェ・コンビニの画面を見ている間だけ進む（ポップアップ・ミニゲーム・お絵かきの間は止まる）
+  dirtyToSick: 600, // 秒。よごれたまま10分で具合が悪くなる
+  sickToGone: 300, // 具合が悪いまま5分でお別れ
+  lonelyToEscape: 480, // 8分なでも遊びもしないと、逃げ出す（なかよし・ごきげんが低いときだけ）
 };
 
 // ---- 相棒の気持ち（設計書 3.8）----
