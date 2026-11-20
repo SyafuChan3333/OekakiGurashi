@@ -16,6 +16,13 @@ export const VT_COMPANIONS = [
 ];
 
 // 魔法のペンが描ける絵（コラボ以外は仮素材。assets/pen/ のファイルを差し替えれば変わる）
+//
+// 表情の差分を入れるとき（設計書 3.8）：
+//   1. 差分の絵を、基本の絵と同じ大きさ・同じ位置合わせで作り、assets/pen/ に置く（例：vt-rotan-smile.png）
+//   2. その子の行に faces を足す。使う枠だけ書けばよく、ない枠は代わりの絵で埋まる（FACE_SLOTS）
+//      { src: 'assets/pen/vt-rotan-happy.png', name: '龍惺ろたん',
+//        faces: { talk: 'assets/pen/vt-rotan-talk.png', smile: 'assets/pen/vt-rotan-smile.png' } }
+//   3. 公開する前に、権利と見せ方を確認する（コラボの子は先方に）
 export const PEN_COMPANIONS = [
   ...VT_COMPANIONS,
   { src: 'assets/pen/human1.svg', name: 'しろ' },
@@ -114,6 +121,19 @@ export const FEELINGS = {
   cheerful: { name: 'ごきげん' },
   normal: { name: 'ふつう' },
 };
+// 表情の差分の枠（3.8）。基本の絵（src）はいつも使う。ない枠は backup の順に代わりを探し、なければ基本の絵
+//   talk 系は「話している間、交互に出す口あけの絵」。どれもなければ、絵を小さく上下に揺らす
+export const FACE_SLOTS = {
+  talk: { name: '基本・口あけ', backup: [] },
+  smile: { name: 'にこにこ', backup: [] },
+  smileTalk: { name: 'にこにこ・口あけ', backup: ['talk'] },
+  happy: { name: 'うれしい', backup: ['smile'] },
+  sad: { name: 'かなしい', backup: [] },
+  angry: { name: 'おこり', backup: ['sad'] },
+};
+// 気持ちごとに使う枠（ふつうは基本の絵）
+export const FEELING_FACE = { normal: null, cheerful: 'smile', happy: 'happy', down: 'sad', sulky: 'angry' };
+
 // しょんぼりの理由。ステータス欄にアイコンで出して、何をすればいいかわかるようにする
 export const NEEDS = {
   hunger: { name: 'おなかがすいた', icon: 'bowl' },

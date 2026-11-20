@@ -30,6 +30,7 @@ try {
   check(r, 'もう一度つぎへで確認画面', (await h2()).includes('この子でいい') && (await page.textContent('.sheet')).includes('しろ'));
   await page.click('[data-act="go"]'); await page.waitForSelector('#pet-card');
   check(r, '相棒を迎えると、ステータス欄が出る', await page.locator('#pet-card').count());
+  check(r, '相棒が話している間は、3Dの相棒が口パク（揺れ）する', (await page.getAttribute('#world', 'data-talking')) === '1');
   check(r, 'ステータス欄は数値のバーではなく、気持ちのことば', !(await page.locator('#pet-card .bar').count()) && ['ごきげん', 'ふつう'].includes(await page.textContent('#pet-card .feel')));
   await page.screenshot({ path: OUT + 'smoke-room.png' });
 

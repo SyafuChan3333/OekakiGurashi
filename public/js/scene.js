@@ -267,6 +267,23 @@ export class World {
   setPet(url, personality) { this.pet.set(url); if (personality) this.personality = personality; }
   setFood(url) { this.food.set(url); this.foodUntil = this.clock.elapsedTime + 3; }
   happy() { this.happyUntil = this.clock.elapsedTime + 1.2; }
+  // 話している間（吹き出しが出ている間）：口あけの絵があれば交互に、なければ小さく上下に揺れる（3.8）
+  talk(ms) {
+    if (this.failed) return;
+    this.talkUntil = ms ? this.clock.elapsedTime + ms / 1000 : 0;
+    if (ms) this.el.dataset.talking = '1'; else delete this.el.dataset.talking;
+  }
+  // 表情の差分（3.8）。still：いまの気持ちの絵、talk：話している間に交互に出す絵（なければ null）
+  async setFaces(still, talk) {
+    if (this.failed) return;
+    const key = `${still}|${talk}`;
+    if (key === this.faceKey) return;
+    this.faceKey = key;
+    this.faceStill = this.faceTalk = null; // 読み込むまでは、いまの絵のまま
+    const [a, b] = await Promise.all([still ? loadTexture(still).catch(() => null) : null, talk ? loadTexture(talk).catch(() => null) : null]);
+    if (key !== this.faceKey) return;
+    this.faceStill = a; this.faceTalk = b;
+  }
   // 気持ち（store.js の feeling の値。null なら記号を出さない）
   setFeeling(f) {
     if (this.failed) return;
@@ -316,6 +333,13 @@ export class World {
     this.pet.group.position.set(this.petPos.x, hop, this.petPos.z);
     this.face(this.pet.group); this.face(this.guest.group); this.face(this.dish.group); this.face(this.food.group);
     if (feel.turn && !this.forcedWalk) this.pet.group.rotation.y += feel.turn; // すねて、こちらを向かない
+    // 表情の差分と口パク。差分がない子は、基本の絵のまま
+    const talking = t < (this.talkUntil || 0);
+    if (!talking && this.el.dataset.talking) delete this.el.dataset.talking;
+    const face = talking && this.faceTalk && Math.floor(t * 7) % 2 ? this.faceTalk : this.faceStill;
+    if (face && this.pet.mat.map !== face) { this.pet.mat.map = face; this.pet.mat.needsUpdate = true; }
+    const chatter = talking && !this.faceTalk ? Math.abs(Math.sin(t * 16)) * 0.035 : 0;
+    this.pet.group.position.y += chatter;
     const squash = feel.squash || 1;
     this.pet.mesh.scale.y = this.pet.height * squash * (1 + Math.sin(t * 2.4) * 0.015);
     this.pet.mesh.position.y = this.pet.mesh.scale.y / 2;
