@@ -29,13 +29,14 @@ function loadTexture(url) {
 
 // 気持ちごとの、頭の上の記号と体の動き（設計書 3.8）。記号の絵は assets/pen/feel-*.svg（同じ名前で置き換えれば差し替わる）
 //   pulse：記号を出しっぱなしにせず、この秒数ごとにふわっと出して消す（うれしい気持ち）
+//   pop：この秒数ごとに、記号がぽんと出なおす（すねる）
 //   hop：跳ねる高さ　hopRate：跳ねる速さ　speed：歩く速さの倍率　rest：立ち止まる長さの倍率　squash：縮こまる（縦の大きさ）　turn：そっぽを向く角度　stay：歩かない
 const FEEL_LOOKS = {
   normal: { mark: null, hop: 0.08, hopRate: 9, speed: 1, rest: 1 },
   cheerful: { mark: 'assets/pen/feel-note.svg', pulse: 4, hop: 0.16, hopRate: 8, speed: 1.15, rest: 0.8 },
   happy: { mark: 'assets/pen/feel-heart.svg', pulse: 1.7, hop: 0.28, hopRate: 7, speed: 1, rest: 1, jump: true },
   down: { mark: 'assets/pen/feel-moya.svg', hop: 0.03, hopRate: 5, speed: 0.5, rest: 1.8, squash: 0.86 },
-  sulky: { mark: 'assets/pen/feel-puku.svg', hop: 0.05, hopRate: 16, speed: 0, rest: 1, turn: 0.9, stay: true },
+  sulky: { mark: 'assets/pen/feel-puku.svg', pop: 1.8, hop: 0.05, hopRate: 16, speed: 0, rest: 1, turn: 0.9, stay: true },
 };
 
 // 絵を貼る板。下端が足元になるように置く
@@ -330,6 +331,13 @@ export class World {
         const k = ((t - this.markFrom) % feel.pulse) / Math.min(1.4, feel.pulse * 0.85);
         rise = Math.min(k, 1) * 0.3; alpha = k >= 1 ? 0 : k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
       }
+      let size = 1;
+      if (feel.pop) {
+        // 小さく出て、ぽんとふくらむ（少し大きくなってから戻る）
+        const k = ((t - this.markFrom) % feel.pop) / 0.35;
+        size = k >= 1 ? 1 : k < 0.6 ? 0.4 + k / 0.6 * 0.75 : 1.15 - (k - 0.6) / 0.4 * 0.15;
+      }
+      mg.scale.setScalar(size);
       this.mark.mat.opacity = alpha;
       mg.position.set(this.petPos.x + right.x, hop + this.pet.mesh.scale.y * 0.8 + rise, this.petPos.z + right.z);
       this.face(mg);
