@@ -2,7 +2,7 @@ import * as S from './store.js';
 import { SKETCH_KINDS } from './store.js';
 import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA, LEGAL, legalSections, FEELINGS, NEEDS, FEELING } from './data.js';
 import { World } from './scene.js';
-import { $, esc, icon, modal, closeModal, modalOpen, toast, say, placeBubbles } from './ui.js';
+import { $, esc, icon, modal, closeModal, modalOpen, toast, say, onSay, placeBubbles } from './ui.js';
 import { drawFlow, openEditor } from './draw.js';
 import { runMinigame } from './minigames.js';
 import { installInputGuards } from './input.js';
@@ -36,6 +36,7 @@ async function init() {
   if (state.started && !state.pet) state.started = false;
   initAudio(() => ({ sound: state.sound, volume: state.volume }));
   world = new World($('#world'), { onPet: petTouched, onAnchor: placeBubbles });
+  onSay((who, ms) => { if (who === 'pet') world.talk(ms); });
   $('#places').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) go(b.dataset.page); });
   $('#settings').addEventListener('click', settings);
   $('#next-guest').addEventListener('click', () => act('next').catch(err => toast(err.message)));
@@ -64,11 +65,18 @@ function go(p) {
 }
 const guestPic = () => `assets/pen/cat${S.guest(state).pic}.png`;
 
+// 3Dの相棒に、いまの気持ち（記号・動き・表情の差分）を伝える（3.8）
+function showFeeling() {
+  const f = state.started ? S.feeling(state) : null;
+  world.setFeeling(f);
+  const { still, talk } = S.petFaces(state, f);
+  world.setFaces(still, talk);
+}
 function syncPet() {
   const gone = state.care.status === 'gone' || state.care.status === 'escaped';
   world.setPet(state.pet?.image || null, personality());
   world.hidePet(gone || !state.started);
-  world.setFeeling(state.started ? S.feeling(state) : null);
+  showFeeling();
 }
 function syncCafe() {
   const c = state.cafe, dish = c.menu.find(m => m.id === c.picked);
@@ -108,7 +116,7 @@ function renderHUD() {
     const h = HOUSES[houseView], own = state.owned.includes(h.id);
     st.innerHTML = `<div class="card ticket"><small>引っ越し先を見る（${houseView + 1}/${HOUSES.length}）</small><b>${esc(h.name)}</b><small>${state.house === h.id ? 'いま住んでいる家' : own ? '購入ずみ' : h.price.toLocaleString() + 'コイン'}</small></div>`;
   }
-  if (state.started) world.setFeeling(S.feeling(state));
+  if (state.started) showFeeling();
   renderAlert();
   renderActions();
 }
@@ -678,7 +686,7 @@ function loop() {
   if (!ev && Math.random() < 0.04 && page === 'room' && state.stats.hunger < 30) say('pet', LINES.hungry);
   if (ev || state.care.status === 'sick') renderHUD();
   else if (page === 'room' && feelingKey() !== shownFeeling) renderHUD();
-  else world.setFeeling(S.feeling(state));
+  else showFeeling();
   if (++saveTick % 10 === 0) persist();
 }
 

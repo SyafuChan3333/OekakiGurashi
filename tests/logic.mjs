@@ -111,6 +111,20 @@ check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX)
   check('逃げている間は気持ちを出さない', S.feeling(f) === null);
 }
 
+// 表情の差分（設計書 3.8）：ない枠は代わりで埋まる。差分がない子は基本の絵と揺れ
+{
+  const D = await import('../public/js/data.js');
+  const f = S.newState(); S.createPet(f, { name: 'f', personality: 'playful', image: 'base.png', self: false });
+  check('差分がない子は、どの気持ちでも基本の絵で、口パクの絵はない', ['normal', 'cheerful', 'down'].every(k => { const r = S.petFaces(f, k); return r.still === 'base.png' && r.talk === null; }));
+  D.PEN_COMPANIONS.push({ src: 'base.png', name: 'ためし', faces: { talk: 'talk.png', smile: 'smile.png', sad: 'sad.png' } });
+  const fc = k => S.petFaces(f, k);
+  check('ふつうは基本の絵、話すときは基本・口あけ', fc('normal').still === 'base.png' && fc('normal').talk === 'talk.png');
+  check('ごきげんはにこにこ。にこにこ・口あけがなければ基本・口あけ', fc('cheerful').still === 'smile.png' && fc('cheerful').talk === 'talk.png');
+  check('うれしいの絵がなければ、にこにこ', fc('happy').still === 'smile.png');
+  check('すねるのおこりの絵がなければ、かなしい', fc('sulky').still === 'sad.png' && fc('sulky').talk === null);
+  D.PEN_COMPANIONS.pop();
+}
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;

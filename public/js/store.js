@@ -1,5 +1,5 @@
 // ゲームの状態とルール。画面描画からは切り離す（6章）。
-import { PEN_DISHES, STARTER_DISHES, GUESTS, HOUSES, CAFE_LEVELS, HARAHARA, SHOP_START, NEW_ITEM_PRICE, SELF_DISCOUNT, FEELING } from './data.js';
+import { PEN_DISHES, STARTER_DISHES, GUESTS, HOUSES, CAFE_LEVELS, HARAHARA, SHOP_START, NEW_ITEM_PRICE, SELF_DISCOUNT, FEELING, PEN_COMPANIONS, FACE_SLOTS, FEELING_FACE } from './data.js';
 
 const KEY = 'oekaki-kurashi-v2';
 export const clamp = n => Math.max(0, Math.min(100, Math.round(n)));
@@ -148,6 +148,19 @@ export function feeling(s, now = Date.now()) {
   if (needs(s).length) return 'down';
   if (s.stats.mood >= FEELING.cheerful) return 'cheerful';
   return 'normal';
+}
+
+// 表情の差分（3.8）。いまの気持ちで見せる絵（still）と、話している間に交互に出す絵（talk。なければ null で、揺れで代わりにする）
+// 魔法のペンの子は、一覧の行の faces から引く（セーブの絵の場所で探す。絵ファイルの名前は変えない決まり。6.1）
+// 自分で描いた子の差分は、いずれ pet.faces に入る
+export function petFaces(s, f) {
+  const p = s.pet;
+  if (!p) return { still: null, talk: null };
+  const faces = p.faces || PEN_COMPANIONS.find(c => c.src === p.image)?.faces || {};
+  const find = slot => slot && (faces[slot] ? slot : FACE_SLOTS[slot].backup.find(b => faces[b])) || null;
+  const used = find(FEELING_FACE[f]);
+  const talkSlot = used === null ? find('talk') : used === 'smile' ? find('smileTalk') : null;
+  return { still: used ? faces[used] : p.image, talk: talkSlot ? faces[talkSlot] : null };
 }
 
 // ---- お世話 ----

@@ -71,9 +71,13 @@ export function toast(msg) {
 
 // ---- 吹き出し ----
 const bubbles = {};
+// 吹き出しが出る・消えるのを知りたいところ（3Dの相棒の口パク）が登録する
+let sayHook = null;
+export const onSay = f => (sayHook = f);
 export function say(who, text, ms = 3200) {
   const b = $(`#bubble-${who}`);
   if (!b) return;
+  sayHook?.(who, text ? ms : 0);
   b.innerHTML = text;
   b.hidden = !text;
   clearTimeout(bubbles[who]);
