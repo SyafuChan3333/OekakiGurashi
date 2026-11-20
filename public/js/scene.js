@@ -28,11 +28,12 @@ function loadTexture(url) {
 }
 
 // 気持ちごとの、頭の上の記号と体の動き（設計書 3.8）。記号の絵は assets/pen/feel-*.svg（同じ名前で置き換えれば差し替わる）
+//   pulse：記号を出しっぱなしにせず、この秒数ごとにふわっと出して消す（うれしい気持ち）
 //   hop：跳ねる高さ　hopRate：跳ねる速さ　speed：歩く速さの倍率　rest：立ち止まる長さの倍率　squash：縮こまる（縦の大きさ）　turn：そっぽを向く角度　stay：歩かない
 const FEEL_LOOKS = {
   normal: { mark: null, hop: 0.08, hopRate: 9, speed: 1, rest: 1 },
-  cheerful: { mark: 'assets/pen/feel-note.svg', hop: 0.16, hopRate: 8, speed: 1.15, rest: 0.8 },
-  happy: { mark: 'assets/pen/feel-heart.svg', hop: 0.28, hopRate: 7, speed: 1, rest: 1, jump: true },
+  cheerful: { mark: 'assets/pen/feel-note.svg', pulse: 4, hop: 0.16, hopRate: 8, speed: 1.15, rest: 0.8 },
+  happy: { mark: 'assets/pen/feel-heart.svg', pulse: 1.7, hop: 0.28, hopRate: 7, speed: 1, rest: 1, jump: true },
   down: { mark: 'assets/pen/feel-moya.svg', hop: 0.03, hopRate: 5, speed: 0.5, rest: 1.8, squash: 0.86 },
   sulky: { mark: 'assets/pen/feel-puku.svg', hop: 0.05, hopRate: 16, speed: 0, rest: 1, turn: 0.9, stay: true },
 };
@@ -101,6 +102,7 @@ export class World {
     this.happyUntil = 0;
     this.feel = FEEL_LOOKS.normal;
     this.mark = new Card(0.36);
+    this.mark.mat.depthTest = false; this.mark.mesh.renderOrder = 10; // 相棒の絵にかかっても、手前に見える
     this.scene.add(this.mark.group);
 
     this.ray = new THREE.Raycaster();
@@ -272,6 +274,7 @@ export class World {
     this.el.dataset.feeling = f || '';
     this.feel = FEEL_LOOKS[f] || FEEL_LOOKS.normal;
     this.mark.set(f ? this.feel.mark : null);
+    this.markFrom = this.clock.elapsedTime;
     if (this.feel.stay && !this.forcedWalk) this.petTarget.copy(this.petPos);
   }
   hidePet(hidden) { this.pet.group.visible = !hidden && !!this.pet.url; }
@@ -319,9 +322,16 @@ export class World {
     const mg = this.mark.group;
     if (this.mark.url) {
       mg.visible = this.pet.group.visible;
-      // 頭の右上（吹き出しは頭の真上に出るので、少し横にずらす）
-      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0).multiplyScalar(this.pet.mesh.scale.x * 0.42);
-      mg.position.set(this.petPos.x + right.x, hop + this.pet.mesh.scale.y * 0.92 + Math.sin(t * 3) * 0.04, this.petPos.z + right.z);
+      // 頭の右上に、絵に少しかかるように（吹き出しは頭の真上に出るので、少し横にずらす）
+      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0).multiplyScalar(this.pet.mesh.scale.x * 0.3);
+      let rise = Math.sin(t * 3) * 0.03, alpha = 1;
+      if (feel.pulse) {
+        // 出てすぐ、上へ浮きながら消える。次に出るまでは見えない
+        const k = ((t - this.markFrom) % feel.pulse) / Math.min(1.4, feel.pulse * 0.85);
+        rise = Math.min(k, 1) * 0.3; alpha = k >= 1 ? 0 : k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
+      }
+      this.mark.mat.opacity = alpha;
+      mg.position.set(this.petPos.x + right.x, hop + this.pet.mesh.scale.y * 0.8 + rise, this.petPos.z + right.z);
       this.face(mg);
     }
 
