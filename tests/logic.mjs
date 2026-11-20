@@ -90,6 +90,27 @@ check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX)
   D.PEN_COMPANIONS.pop();
 }
 
+// 相棒の気持ち（設計書 3.8）：うれしい ＞ すねる ＞ しょんぼり ＞ ごきげん ＞ ふつう
+{
+  const D = await import('../public/js/data.js');
+  const f = S.newState(); S.createPet(f, { name: 'f', personality: 'playful', image: 'x', self: true }); f.started = true;
+  f.stats.mood = 50;
+  check('はじめは「ふつう」', S.feeling(f) === 'normal');
+  f.stats.mood = D.FEELING.cheerful;
+  check('ごきげんが高いと「ごきげん」', S.feeling(f) === 'cheerful');
+  f.stats.hunger = D.FEELING.hungry - 1;
+  check('おなかがすくと「しょんぼり」で、理由はおなか', S.feeling(f) === 'down' && S.needs(f).join() === 'hunger');
+  f.care.dirty = D.FEELING.dirty; f.care.lonely = D.FEELING.lonely;
+  check('ふつうモードでは、よごれ・さみしさもしょんぼりの理由', S.needs(f).join() === 'hunger,dirty,lonely');
+  f.mode = 'harahara';
+  check('ハラハラモードのさみしさは「すねる」', S.feeling(f) === 'sulky' && !S.needs(f).includes('lonely'));
+  S.pet(f);
+  check('なでると「うれしい」', S.feeling(f) === 'happy');
+  check(`「うれしい」は${D.FEELING.happySec}秒で終わる`, S.feeling(f, Date.now() + D.FEELING.happySec * 1000 + 1) === 'down');
+  f.care.status = 'escaped';
+  check('逃げている間は気持ちを出さない', S.feeling(f) === null);
+}
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;

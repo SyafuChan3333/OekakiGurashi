@@ -104,6 +104,31 @@ export const HARAHARA = {
   lonelyToEscape: 150,
 };
 
+// ---- 相棒の気持ち（設計書 3.8）----
+// 気持ちは「ふつう」＋4つ。いくつも当てはまるときは order の順で1つだけ出す
+export const FEELINGS = {
+  happy: { name: 'うれしい' },
+  sulky: { name: 'すねている' },
+  down: { name: 'しょんぼり' },
+  cheerful: { name: 'ごきげん' },
+  normal: { name: 'ふつう' },
+};
+// しょんぼりの理由。ステータス欄にアイコンで出して、何をすればいいかわかるようにする
+export const NEEDS = {
+  hunger: { name: 'おなかがすいた', icon: 'bowl' },
+  dirty: { name: 'よごれている', icon: 'bath' },
+  lonely: { name: 'さみしい', icon: 'heart' },
+  sick: { name: '具合が悪い', icon: 'sick' },
+};
+// 切り替わる目安（あとで調整する。8章）
+export const FEELING = {
+  cheerful: 70, // ごきげんがこれ以上で「ごきげん」
+  hungry: 30, // おなかがこれ未満で「おなかがすいた」
+  dirty: HARAHARA.dirtyToSick / 2, // よごれ（秒）が、病気になるまでの半分を過ぎたら
+  lonely: HARAHARA.lonelyToEscape / 2, // さみしさ（秒）が、逃げ出すまでの半分を過ぎたら。ハラハラモードでは「すねる」
+  happySec: 5, // なでた・遊んだ・ごはん・お風呂のあと、「うれしい」が続く秒数
+};
+
 // ---- 法的表示（設定 → 法的表示）----
 // 外から持ってきたもの（ライブラリ・フォント・音など）を足したら、LEGAL_CREDITS に1行足す。
 //   { kind, name, by, license?, url?, licenseUrl? }  kind は LEGAL_KINDS のどれか。並びは LEGAL_KINDS の順
