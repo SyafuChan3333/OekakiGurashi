@@ -1,6 +1,6 @@
 import * as S from './store.js';
 import { SKETCH_KINDS } from './store.js';
-import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA } from './data.js';
+import { PERSONALITIES, PEN_COMPANIONS, PEN_DISHES, PEN_FOODS, PEN_POSTERS, PEN_TOYS, TOY_TYPES, NEW_ITEM_PRICE, SELF_DISCOUNT, CATEGORIES, HOUSES, CAFE_LEVELS, HARAHARA, LEGAL, legalSections } from './data.js';
 import { World } from './scene.js';
 import { $, esc, icon, modal, closeModal, modalOpen, toast, say, placeBubbles } from './ui.js';
 import { drawFlow, openEditor } from './draw.js';
@@ -582,6 +582,7 @@ function settings() {
       <button class="btn wide" data-act="import">セーブを読み込む</button>
       <button class="btn wide danger" data-act="reset">最初からやり直す</button>
     </div>
+    <button class="btn wide" data-act="legal">法的表示</button>
     ${DEBUG ? `<details class="debug"><summary>開発用</summary><div class="list">
       <button class="btn wide" data-act="dbg-escape">逃げた状態にする</button>
       <button class="btn wide" data-act="dbg-sick">具合が悪い状態にする</button>
@@ -604,6 +605,7 @@ function settings() {
         });
       }
       if (a === 'import') importSave();
+      if (a === 'legal') legal(view);
       // 開発用：ハラハラモードの出来事などを、待たずに試す
       if (a.startsWith('dbg-')) {
         if (!state.started || !state.pet) return toast('相棒を迎えてから使えます');
@@ -631,6 +633,19 @@ function settings() {
   });
   view();
 }
+// 法的表示：中身は data.js の LEGAL・LEGAL_CREDITS と、魔法のペンの相棒の credit から作る
+function legal(back) {
+  const link = (url, text) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
+  const item = x => `<li><b>${link(x.url, x.name)}</b>${x.by ? `<span>${esc(x.by)}</span>` : ''}${x.license ? `<span>${link(x.licenseUrl, x.license)}</span>` : ''}</li>`;
+  modal(`<h2>法的表示</h2>
+    <div class="legal">
+      <p><b>${esc(LEGAL.title)}</b><br>${esc(LEGAL.copyright)}</p>
+      <p class="note">あなたがゲームの中で描いた絵は、あなたのものです。下に書いたものを除いて、このゲームの絵・文章・プログラムは制作者のものです。</p>
+      ${legalSections().map(sec => `<section><h3>${esc(sec.title)}</h3><ul>${sec.items.map(item).join('')}</ul></section>`).join('')}
+    </div>
+    <button class="btn wide" data-act="back">もどる</button>`, { onAct: a => { if (a === 'back') back(); } });
+}
+
 function settingsInputs() {
   const root = $('#modal-root');
   root.addEventListener('input', e => { if (e.target.id === 'vol') { state.volume = +e.target.value; setScene(page === 'cafe' ? 'cafe' : 'room'); persist(); } });
