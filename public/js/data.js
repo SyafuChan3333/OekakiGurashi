@@ -20,9 +20,9 @@ const vtCompanion = (prefix, name) => {
       happy: assetVar('happy'),
       sad: assetVar('sad'),
       angry: assetVar('angry'),
-    }
-  }
-}
+    },
+  };
+};
 
 // コラボの相棒（1枚絵+表情差分。魔法のペンの相棒の先頭に並ぶ）。
 // 公開版は 512×512 の縮小版。元の大きい絵と表情の差分は art/collab/ にある（公開しない）
