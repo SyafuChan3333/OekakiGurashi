@@ -79,6 +79,17 @@ check(`メニューは${S.MENU_MAX}品でいっぱい`, mf.cafe.menu.length === 
 while (!S.shopFull(mf)) S.addShopItem(mf, { kind: 'food', name: 'f', image: 'x', self: true });
 check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX);
 
+// 法的表示：コラボの相棒と、credit を持つ魔法のペンの相棒がキャラクターに並ぶ
+{
+  const D = await import('../public/js/data.js');
+  const kinds = D.legalSections().map(x => x.kind);
+  check('法的表示は LEGAL_KINDS の順に並ぶ', kinds.join() === Object.keys(D.LEGAL_KINDS).filter(k => kinds.includes(k)).join());
+  check('法的表示のキャラクターにコラボの相棒が出る', D.VT_COMPANIONS.every(c => D.legalSections()[0].items.some(x => x.name === c.name)));
+  D.PEN_COMPANIONS.push({ src: 'x', name: 'ためし', credit: '© ためしの人' });
+  check('credit を持つ相棒は、表記つきで出る', D.legalSections()[0].items.some(x => x.name === 'ためし' && x.by === '© ためしの人'));
+  D.PEN_COMPANIONS.pop();
+}
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;

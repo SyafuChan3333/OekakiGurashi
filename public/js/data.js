@@ -103,3 +103,41 @@ export const HARAHARA = {
   sickToGone: 90,
   lonelyToEscape: 150,
 };
+
+// ---- 法的表示（設定 → 法的表示）----
+// 外から持ってきたもの（ライブラリ・フォント・音など）を足したら、LEGAL_CREDITS に1行足す。
+//   { kind, name, by, license?, url?, licenseUrl? }  kind は LEGAL_KINDS のどれか。並びは LEGAL_KINDS の順
+// コラボの相棒は、ここには書かない。魔法のペンの相棒の一覧（VT_COMPANIONS など）の credit から自動で並ぶ（設計書 3.8）
+export const LEGAL = {
+  title: 'おえかき暮らし',
+  copyright: '© 2026 SyafuChan3333',
+};
+
+export const LEGAL_KINDS = {
+  chara: 'キャラクター',
+  lib: 'ライブラリ',
+  font: 'フォント',
+  music: '音楽',
+  sound: '効果音',
+};
+
+export const LEGAL_CREDITS = [
+  { kind: 'lib', name: 'three.js', by: 'three.js authors', license: 'MIT License', url: 'https://threejs.org/', licenseUrl: 'vendor/THREE-LICENSE.txt' },
+  { kind: 'font', name: 'Yusei Magic', by: 'Tanukizamurai', license: 'SIL Open Font License 1.1', url: 'https://github.com/tanukifont/YuseiMagic' },
+  { kind: 'font', name: 'Yomogi', by: 'Satsuyako', license: 'SIL Open Font License 1.1', url: 'https://fonts.google.com/specimen/Yomogi' },
+  { kind: 'music', name: '日向ぼっこ・のほほん喫茶', by: '甘茶（甘茶の音楽工房）', url: 'https://amachamusic.chagasi.com/' },
+  { kind: 'sound', name: 'Interface Sounds', by: 'Kenney', license: 'CC0', url: 'https://kenney.nl/assets/interface-sounds' },
+  { kind: 'sound', name: 'Meow of a Siamese cat', by: 'freemaster2', license: 'CC0', url: 'https://commons.wikimedia.org/wiki/File:Meow_of_a_Siamese_cat_-_freemaster2.wav' },
+];
+
+// 法的表示に並べる中身を、種類ごとにまとめて返す。
+// キャラクター：コラボの相棒（いまは名前だけ）と、credit を持つ魔法のペンの相棒
+export function legalSections() {
+  const chara = PEN_COMPANIONS
+    .filter(c => c.credit || VT_COMPANIONS.includes(c))
+    .map(c => ({ kind: 'chara', name: c.name, by: c.credit || '' }));
+  const all = [...chara, ...LEGAL_CREDITS];
+  return Object.entries(LEGAL_KINDS)
+    .map(([kind, title]) => ({ kind, title, items: all.filter(x => x.kind === kind) }))
+    .filter(s => s.items.length);
+}

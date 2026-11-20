@@ -82,6 +82,19 @@ try {
   check(r, 'セーブを文字で書き出せる', save.length > 100, `${save.length} 文字`);
   await page.click('.sheet-close');
 
+  // 設定 → 法的表示：コラボの相棒と、ライブラリ・フォントなどが並び、もどれる
+  await page.click('#settings'); await wait(200);
+  await page.screenshot({ path: OUT + 'smoke-settings.png' });
+  await page.click('[data-act="legal"]'); await wait(200);
+  const legal = await page.textContent('.legal');
+  check(r, '法的表示にコラボの相棒・three.js・フォントが出る', ['龍惺ろたん', 'three.js', 'Yusei Magic', 'あなたのもの'].every(t => legal.includes(t)));
+  await page.screenshot({ path: OUT + 'smoke-legal.png' });
+  await page.evaluate(() => { const s = document.querySelector('.sheet'); s.scrollTop = s.scrollHeight; });
+  await page.screenshot({ path: OUT + 'smoke-legal-end.png' });
+  await page.click('[data-act="back"]'); await wait(200);
+  check(r, '法的表示から設定にもどれる', !!(await page.locator('[data-act="legal"]').count()));
+  await page.click('.sheet-close');
+
   // 見本を見せる：ポスターを、紙に描いた絵の写真から描いてもらう（設計書 2.5）
   await page.click('[data-page="room"]'); await wait(300);
   await page.click('[data-a="remodel"]'); await wait(200);
