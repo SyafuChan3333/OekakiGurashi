@@ -27,6 +27,16 @@ function loadTexture(url) {
   return p;
 }
 
+// 気持ちごとの、頭の上の記号と体の動き（設計書 3.8）。記号の絵は assets/pen/feel-*.svg（同じ名前で置き換えれば差し替わる）
+//   hop：跳ねる高さ　hopRate：跳ねる速さ　speed：歩く速さの倍率　rest：立ち止まる長さの倍率　squash：縮こまる（縦の大きさ）　turn：そっぽを向く角度　stay：歩かない
+const FEEL_LOOKS = {
+  normal: { mark: null, hop: 0.08, hopRate: 9, speed: 1, rest: 1 },
+  cheerful: { mark: 'assets/pen/feel-note.svg', hop: 0.16, hopRate: 8, speed: 1.15, rest: 0.8 },
+  happy: { mark: 'assets/pen/feel-heart.svg', hop: 0.28, hopRate: 7, speed: 1, rest: 1, jump: true },
+  down: { mark: 'assets/pen/feel-moya.svg', hop: 0.03, hopRate: 5, speed: 0.5, rest: 1.8, squash: 0.86 },
+  sulky: { mark: 'assets/pen/feel-puku.svg', hop: 0.05, hopRate: 16, speed: 0, rest: 1, turn: 0.9, stay: true },
+};
+
 // 絵を貼る板。下端が足元になるように置く
 class Card {
   constructor(height) {
@@ -89,6 +99,9 @@ export class World {
     this.wait = 1;
     this.personality = { speed: 1, wait: [2, 4] };
     this.happyUntil = 0;
+    this.feel = FEEL_LOOKS.normal;
+    this.mark = new Card(0.36);
+    this.scene.add(this.mark.group);
 
     this.ray = new THREE.Raycaster();
     this.ndc = new THREE.Vector2();
@@ -251,6 +264,16 @@ export class World {
   setPet(url, personality) { this.pet.set(url); if (personality) this.personality = personality; }
   setFood(url) { this.food.set(url); this.foodUntil = this.clock.elapsedTime + 3; }
   happy() { this.happyUntil = this.clock.elapsedTime + 1.2; }
+  // 気持ち（store.js の feeling の値。null なら記号を出さない）
+  setFeeling(f) {
+    if (this.failed) return;
+    if (f === this.feelName) return;
+    this.feelName = f;
+    this.el.dataset.feeling = f || '';
+    this.feel = FEEL_LOOKS[f] || FEEL_LOOKS.normal;
+    this.mark.set(f ? this.feel.mark : null);
+    if (this.feel.stay && !this.forcedWalk) this.petTarget.copy(this.petPos);
+  }
   hidePet(hidden) { this.pet.group.visible = !hidden && !!this.pet.url; }
 
   frame() {
@@ -266,23 +289,41 @@ export class World {
     this.camera.lookAt(look);
 
     // 相棒のうろうろ（性格で動き方が変わる）
-    if (this.mode === 'room' && !this.forcedWalk) {
+    const feel = this.feel;
+    if (this.mode === 'room' && !this.forcedWalk && !feel.stay) {
       this.wait -= dt;
       if (this.wait <= 0 && this.petPos.distanceTo(this.petTarget) < 0.05) {
         const b = this.bounds || 2, [a, c] = this.personality.wait;
         const near = this.personality.id === 'clingy' ? 0.45 : 1, narrow = portrait ? Math.min(1, 0.8 / b) : 1;
         this.petTarget.set((Math.random() * 2 - 1) * b * near * narrow, 0, (Math.random() * 2 - 1) * b * 0.7 * near + 0.4);
-        this.wait = a + Math.random() * (c - a);
+        this.wait = (a + Math.random() * (c - a)) * feel.rest;
       }
     }
     const to = this.petTarget.clone().sub(this.petPos), dist = to.length();
     const moving = dist > 0.03;
-    if (moving) this.petPos.add(to.multiplyScalar(Math.min(1, (dt * 1.2 * (this.personality.speed || 1)) / dist)));
+    const pace = this.forcedWalk ? 1 : feel.speed || 0.5;
+    if (moving) this.petPos.add(to.multiplyScalar(Math.min(1, (dt * 1.2 * pace * (this.personality.speed || 1)) / dist)));
     else this.forcedWalk = false;
-    const hop = t < this.happyUntil ? Math.abs(Math.sin(t * 14)) * 0.25 : moving ? Math.abs(Math.sin(t * 9)) * 0.08 : Math.sin(t * 2) * 0.015;
+    const wave = r => Math.abs(Math.sin(t * r));
+    const hop = t < this.happyUntil ? wave(14) * 0.25
+      : feel.jump ? Math.max(0, Math.sin(t * feel.hopRate)) * feel.hop // ぴょんぴょん
+      : feel.stay ? wave(feel.hopRate) * feel.hop // その場で足ぶみ
+      : moving ? wave(feel.hopRate) * feel.hop : Math.sin(t * 2) * 0.015 + (feel === FEEL_LOOKS.cheerful ? wave(4) * 0.04 : 0);
     this.pet.group.position.set(this.petPos.x, hop, this.petPos.z);
     this.face(this.pet.group); this.face(this.guest.group); this.face(this.dish.group); this.face(this.food.group);
-    this.pet.mesh.scale.y = this.pet.height * (1 + Math.sin(t * 2.4) * 0.015);
+    if (feel.turn && !this.forcedWalk) this.pet.group.rotation.y += feel.turn; // すねて、こちらを向かない
+    const squash = feel.squash || 1;
+    this.pet.mesh.scale.y = this.pet.height * squash * (1 + Math.sin(t * 2.4) * 0.015);
+    this.pet.mesh.position.y = this.pet.mesh.scale.y / 2;
+    // 頭の上の記号：小さく、ふわふわ浮かせる
+    const mg = this.mark.group;
+    if (this.mark.url) {
+      mg.visible = this.pet.group.visible;
+      // 頭の右上（吹き出しは頭の真上に出るので、少し横にずらす）
+      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0).multiplyScalar(this.pet.mesh.scale.x * 0.42);
+      mg.position.set(this.petPos.x + right.x, hop + this.pet.mesh.scale.y * 0.92 + Math.sin(t * 3) * 0.04, this.petPos.z + right.z);
+      this.face(mg);
+    }
 
     if (this.food.group.visible) {
       this.food.group.position.set(this.petPos.x + 0.6, 0, this.petPos.z + 0.2);

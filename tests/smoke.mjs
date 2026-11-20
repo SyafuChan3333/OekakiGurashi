@@ -177,6 +177,7 @@ try {
   await page.click('#settings'); await wait(200);
   await page.click('details.debug summary'); await page.click('[data-act="dbg-dirty"]'); await wait(1300);
   check(r, 'よごれると「しょんぼり」と理由が出る', (await page.textContent('#pet-card .feel')) === 'しょんぼり' && (await page.textContent('#pet-card .needs')).includes('よごれている'));
+  check(r, '3Dの相棒も「しょんぼり」になる', (await page.getAttribute('#world', 'data-feeling')) === 'down');
   await page.screenshot({ path: OUT + 'smoke-feeling.png' });
 
   // 開発用：お別れの直前にする（知らせの残り秒数が数秒になる）
