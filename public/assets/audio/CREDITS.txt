@@ -1,16 +1,22 @@
-おえかき暮らしと、小さなカフェ — ゲーム内の音楽と効果音
+おえかき暮らし — 音楽と効果音の出どころ（控え）
 
-BGM：日向ぼっこ／のほほん喫茶
-作曲：甘茶（Amacha）／配布：甘茶の音楽工房
+このファイルは、制作側でまとめた控えです。権利者が出したものではありません。
+利用条件を確かめるときは、ここの要約ではなく、下のリンク先にある原文を読んでください。
+
+■ BGM：日向ぼっこ／のほほん喫茶
+作曲・配布：甘茶（甘茶の音楽工房）
 https://amachamusic.chagasi.com/music_hinatabokko.html
 https://amachamusic.chagasi.com/music_nohohonkissa.html
-利用規約：https://amachamusic.chagasi.com/terms.html
-2026-11-03に利用条件を確認。ゲームのBGMとして同梱しています。
-楽曲のみの販売・二次配布、作曲者の詐称、Content ID登録は禁止。
+利用規約（原文）：https://amachamusic.chagasi.com/terms.html
+使い方：このゲームの BGM として、ゲームのファイルと一緒に置いています（公開版・プレビュー版）。
+音楽だけを取り出して配ったり売ったりはしません。
+（2026-11-27、制作者が規約の原文を確認）
 
-効果音：Interface Sounds (1.0) — Kenney
+■ 効果音：Interface Sounds (1.0) — Kenney
 https://kenney.nl/assets/interface-sounds
-License: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+ライセンス（原文）：CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
+同じフォルダの Kenney-License.txt は、素材に付いていたライセンスの写し
+ファイル名を変えて使っています：
 click_003.ogg → tap.ogg
 confirmation_001.ogg → complete.ogg
 bong_001.ogg → happy.ogg
