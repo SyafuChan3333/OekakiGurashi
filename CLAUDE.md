@@ -58,9 +58,15 @@
 artifacts は外部スクリプトを CDN からしか読めない・ダウンロードできない・IndexedDB が使えないことがある。
 そのため公開版と2ファイルだけ違う。差し替えは `preview/` に置いてある（詳しくは `preview/README.md`）。
 
-- 載せるのは `public/` の中の `index.html`・`style.css`・`js/`・`assets/pen/`・`assets/favicon.svg`（artifacts 上のパスは `public/` を外したもの）。`vendor/` と `assets/audio/` は載せない
+- 載せるのは `public/` の中の `index.html`・`style.css`・`js/`・`assets/pen/`・`assets/audio/`・`assets/favicon.svg`（artifacts 上のパスは `public/` を外したもの）。`vendor/` は載せない（プレビューは CDN から読む）
+  - `assets/audio/` の BGM（甘茶の音楽工房）は、制作者が規約の原文を確かめ、ゲームの BGM としてゲームと一緒に置くならプレビューに載せてよいと判断した（2026-11-27）
 - `js/three.js` と `js/config.js` は、`preview/js/` の同名ファイルを載せる
 - 変えたファイルだけを載せ直せばよい（publish_files は載せなかったファイルを残す）
+
+## 素材の権利
+
+- 権利や利用条件を確かめるときは、**配布元・権利者の原文（リンク先）をたどる**。`CREDITS.txt`・`art/*/README.md`・設計書・法的表示に書いた条件は、こちらでまとめた控えで、正本ではない
+- 新しい素材を入れるときは、原文のリンクを控えに残し、条件の判断は制作者にしてもらう
 
 ## 決まりごと（設計書から、コードを書くときに効くもの）
 
