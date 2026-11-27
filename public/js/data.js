@@ -190,6 +190,7 @@ export const LEGAL_CREDITS = [
   { kind: 'font', name: 'Yomogi', by: 'Satsuyako', license: 'SIL Open Font License 1.1', url: 'https://fonts.google.com/specimen/Yomogi' },
   { kind: 'music', name: '日向ぼっこ・のほほん喫茶', by: '甘茶（甘茶の音楽工房）', url: 'https://amachamusic.chagasi.com/' },
   { kind: 'sound', name: 'Interface Sounds', by: 'Kenney', license: 'CC0', url: 'https://kenney.nl/assets/interface-sounds' },
+  { kind: 'sound', name: '効果音（相棒をなでたとき）', by: 'Tスタ', license: '利用規約', url: 'https://tnosite.com/', licenseUrl: 'https://tnosite.com/agreement/' },
 ];
 
 // 法的表示に並べる中身を、種類ごとにまとめて返す。

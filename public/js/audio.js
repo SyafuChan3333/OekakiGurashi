@@ -6,8 +6,8 @@ const DIR = 'assets/audio/';
 const BGM = { room: 'hinatabokko.mp3', cafe: 'nohohonkissa.mp3' };
 const QUIET = 0.35; // ミニゲーム・お絵かきの間の BGM の大きさ（ふだんに対する割合）
 const BGM_GAIN = 0.5, SE_GAIN = 0.8; // 音量のつまみを最大にしたときの大きさ
-// 効果音の名前 → ファイル。相棒の声（meow）も、いまは happy と同じ音
-const SE = { tap: 'tap.ogg', happy: 'happy.ogg', done: 'complete.ogg', meow: 'happy.ogg' };
+// 効果音の名前 → ファイル。pet は相棒をなでた・相棒が応えたとき（鳴き声の代わり）
+const SE = { tap: 'tap.ogg', happy: 'happy.ogg', done: 'complete.ogg', pet: 'pet.ogg' };
 
 let ctx = null, bgmBus = null, seBus = null;
 let getPrefs = () => ({ sound: true, bgmVolume: 0.5, seVolume: 0.7 });
@@ -93,7 +93,7 @@ const NOTES = {
   tap: [[660, 0.05]],
   happy: [[784, 0.08], [988, 0.1]],
   done: [[523, 0.08], [659, 0.08], [784, 0.14]],
-  meow: [[784, 0.08], [988, 0.1]],
+  pet: [[988, 0.06], [1175, 0.12]],
 };
 function synth(name) {
   let t = ctx.currentTime;

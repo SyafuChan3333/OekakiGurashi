@@ -20,3 +20,10 @@ https://kenney.nl/assets/interface-sounds
 click_003.ogg → tap.ogg
 confirmation_001.ogg → complete.ogg
 bong_001.ogg → happy.ogg
+
+■ 効果音：相棒をなでたとき（pet.ogg）
+配布：Tスタ
+https://tnosite.com/
+利用規約（原文）：https://tnosite.com/agreement/
+使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
+（2026-11-27、制作者が規約の原文を確認）

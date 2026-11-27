@@ -181,8 +181,8 @@ function petTouched(kind) {
   const now = performance.now();
   if (now < petCool) return;
   petCool = now + 500;
-  if (kind === 'stroke') { S.pet(state); world.happy(); play('happy'); say('pet', pick(LINES.stroke)); }
-  else { play('meow'); say('pet', pick(LINES.tap[personality().id] || LINES.tap.playful)); }
+  if (kind === 'stroke') { S.pet(state); world.happy(); play('pet'); say('pet', pick(LINES.stroke)); }
+  else { play('pet'); say('pet', pick(LINES.tap[personality().id] || LINES.tap.playful)); }
   renderHUD();
 }
 
