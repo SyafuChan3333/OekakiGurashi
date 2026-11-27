@@ -3,7 +3,7 @@
 // 長押しは使わない（4.5）。相棒の絵の上だけが判定の対象。
 import { $, esc, icon } from './ui.js';
 import { onDrag } from './input.js';
-import { play } from './audio.js';
+import { play, loopSe } from './audio.js';
 
 const SIZE = 512, GRID = 8;
 const STEPS = [
@@ -94,10 +94,18 @@ export function bathGame({ petName, petImage }) {
         // 工程が変わったら、指を一度離して触り直すまで判定しない
         locked = true;
         last = null;
+        quietAll();
         enter(step + 1);
         if (step < STEPS.length) $('#mg-bar').style.width = '0%';
       }
     }
+
+    // ---- 音：シャワーは指を当てている間、泡はこすっている間だけ鳴らす ----
+    let stopShower = null, stopBubble = null, bubbleIdle = 0;
+    const quietShower = () => { stopShower?.(); stopShower = null; };
+    const quietBubble = () => { stopBubble?.(); stopBubble = null; clearTimeout(bubbleIdle); };
+    const quietAll = () => { quietShower(); quietBubble(); };
+    const showerStep = () => !finished && !locked && STEPS[step]?.tool === 'shower';
 
     // ---- 操作 ----
     const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * SIZE / r.width, y: (e.clientY - r.top) * SIZE / r.height }; };
@@ -108,6 +116,7 @@ export function bathGame({ petName, petImage }) {
         locked = false;
         last = pointer = pos(e);
         if (STEPS[step]?.id === 'blow') tapDrop(pointer);
+        if (showerStep()) stopShower ??= loopSe('shower', -0.35);
       },
       move: e => {
         if (finished || locked || !last) return;
@@ -120,6 +129,10 @@ export function bathGame({ petName, petImage }) {
           if (id === 'rinse') foam = foam.filter(f => Math.hypot(f.x - p.x, f.y - (p.y + 30)) > 48);
         }
         if (id === 'lather') {
+          // こすっている間だけ、泡の音をくり返す。手が止まったら止める
+          stopBubble ??= loopSe('bubble', -0.95, { vary: 0.15 });
+          clearTimeout(bubbleIdle);
+          bubbleIdle = setTimeout(quietBubble, 250);
           // こする：左右に往復すると泡が増える
           const d = Math.sign(p.x - rubX);
           if (d && d !== rubDir) { rubDir = d; }
@@ -130,7 +143,7 @@ export function bathGame({ petName, petImage }) {
         last = p;
         advanceIfDone();
       },
-      end: () => { last = null; },
+      end: () => { last = null; quietAll(); },
     });
     function tapDrop(p) {
       if (locked) return;
@@ -231,6 +244,7 @@ export function bathGame({ petName, petImage }) {
 
     function finish() {
       finished = true;
+      quietAll();
       const sec = (performance.now() - t0) / 1000, quality = sec <= GOOD_TIME ? 'good' : 'normal';
       play('done');
       $('#mg-how').textContent = quality === 'good' ? 'ぴかぴか！ 手ぎわよく洗えました' : 'ぴかぴか！ さっぱりしました';
@@ -242,6 +256,7 @@ export function bathGame({ petName, petImage }) {
       root.appendChild(ok);
     }
     function close(result) {
+      quietAll();
       cancelAnimationFrame(raf);
       root.hidden = true; root.innerHTML = ''; root.onclick = null;
       document.body.classList.remove('editing');

@@ -7,7 +7,8 @@ const BGM = { room: 'hinatabokko.mp3', cafe: 'nohohonkissa.mp3' };
 const QUIET = 0.35; // ミニゲーム・お絵かきの間の BGM の大きさ（ふだんに対する割合）
 const BGM_GAIN = 0.5, SE_GAIN = 0.8; // 音量のつまみを最大にしたときの大きさ
 // 効果音の名前 → ファイル。pet は相棒をなでた・相棒が応えたとき（鳴き声の代わり）
-const SE = { tap: 'tap.ogg', happy: 'happy.ogg', done: 'complete.ogg', pet: 'pet.ogg' };
+// shower・bubble は、動かしている間だけ鳴らし続ける音（loopSe）
+const SE = { tap: 'tap.ogg', happy: 'happy.ogg', done: 'complete.ogg', pet: 'pet.ogg', shower: 'shower.mp3', bubble: 'bubble.mp3' };
 
 let ctx = null, bgmBus = null, seBus = null;
 let getPrefs = () => ({ sound: true, bgmVolume: 0.5, seVolume: 0.7 });
@@ -86,6 +87,50 @@ export function play(name) {
     const s = ctx.createBufferSource();
     s.buffer = buf; s.connect(seBus); s.start();
   });
+}
+
+// 鳴らし続ける効果音。止めるための関数を返す（何度呼んでもよい）
+//   gap：1回鳴らし終わってから、次を鳴らすまでの秒数
+//     0 ならすき間なくつなぐ。マイナスにすると、終わりをその分だけ切って次を重ねる（最後の無音を消すのに使う）
+//     例：シャワー（長い音をそのままつなぐ）loopSe('shower', -0.35)
+//         泡（短い音を一定の間隔でくり返す）loopSe('bubble', -0.95, { vary: 0.15 })
+//   vary：1回ごとに音の高さを、この割合だけばらつかせる（同じ音のくり返しが機械っぽくならないように）
+// ファイルが読めないとき（プレビューなど）や音がオフのときは、何も鳴らさない
+export function loopSe(name, gap = 0, { vary = 0 } = {}) {
+  if (!ctx || !getPrefs().sound || !SE[name]) return () => {};
+  const out = ctx.createGain();
+  out.connect(seBus);
+  let stopped = false, timer = 0, next = 0;
+  const sources = [];
+  load(SE[name]).then(buf => {
+    if (stopped || !buf) return;
+    const period = Math.max(0.05, buf.duration + gap);
+    next = ctx.currentTime + 0.02;
+    // 少し先まで予約しておく（タイマーのずれで途切れないように）
+    const fill = () => {
+      while (next < ctx.currentTime + 0.3) {
+        const s = ctx.createBufferSource();
+        s.buffer = buf;
+        if (vary) s.playbackRate.value = 1 + (Math.random() * 2 - 1) * vary;
+        s.connect(out);
+        s.start(next);
+        if (gap < 0) s.stop(next + period); // 切った終わりは鳴らさない
+        sources.push(s);
+        s.onended = () => sources.splice(sources.indexOf(s), 1);
+        next += period;
+      }
+    };
+    fill();
+    timer = setInterval(fill, 50);
+  });
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(timer);
+    const t = ctx.currentTime;
+    out.gain.setTargetAtTime(0, t, 0.04); // ぷつっと切れないよう、さっと小さくしてから止める
+    for (const s of sources) { try { s.stop(t + 0.2); } catch {} }
+  };
 }
 
 // ファイルが読めないときの代わり（その場で合成する短い音）

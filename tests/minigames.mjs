@@ -25,6 +25,13 @@ for (const [name, file, fn, args] of GAMES) {
     await page.waitForSelector('#editor:not([hidden]) .mg-canvas'); await page.waitForTimeout(600);
     const painted = await page.evaluate(() => { const c = document.querySelector('.mg-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4 * 97) if (d[i]) n++; return n; });
     check(r, `${name}：描画される`, painted > 50);
+    if (name === 'お風呂') { // シャワーに指を当てている間、シャワーの音（長い音）を鳴らす
+      await page.evaluate(() => { window._long = 0; const o = AudioBufferSourceNode.prototype.start; AudioBufferSourceNode.prototype.start = function (...a) { if (this.buffer?.duration > 10 && this.buffer.duration < 30) window._long++; return o.apply(this, a); }; });
+      await page.mouse.move(...await P(256, 300)); await page.mouse.down();
+      for (let k = 1; k <= 6; k++) await page.mouse.move(...await P(256 + k * 10, 300));
+      await page.waitForTimeout(500); await page.mouse.up();
+      check(r, 'お風呂：シャワーを当てている間、シャワーの音が鳴る', await page.evaluate(() => window._long) >= 1);
+    }
     if (name === 'ぬいぐるみ') { // わたす → 4回ぎゅっ
       await page.mouse.move(...await P(110, 380)); await page.mouse.down();
       for (let k = 1; k <= 10; k++) await page.mouse.move(...await P(110 + k * 19, 380));

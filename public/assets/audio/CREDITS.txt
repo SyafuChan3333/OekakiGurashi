@@ -27,3 +27,18 @@ https://tnosite.com/staging-se/#comical_se
 利用規約（原文）：https://tnosite.com/agreement/
 使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
 （2026-11-27、制作者が規約の原文を確認）
+
+■ 効果音：household shower（shower.mp3。お風呂でシャワーを当てている間）
+配布：Pixabay（投稿者：freesound_community）
+https://pixabay.com/sound-effects/household-shower-79059/
+ライセンス（原文）：Pixabay Content License https://pixabay.com/service/license-summary/
+加工：音量を上げ、モノラル 96kbps に変換
+使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
+（2026-11-27、制作者が選んだ素材）
+
+■ 効果音：泡03・高音・単音（bubble.mp3。お風呂で泡立てている間、くり返し鳴らす）
+配布：On-Jin ～音人～（生活系音 ＞ 泡・あぶく）
+https://on-jin.com/
+利用規約（原文）：https://on-jin.com/kiyaku.php
+使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
+（2026-11-27、制作者が選んだ素材）

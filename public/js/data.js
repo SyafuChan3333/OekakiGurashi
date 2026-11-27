@@ -191,6 +191,8 @@ export const LEGAL_CREDITS = [
   { kind: 'music', name: '日向ぼっこ・のほほん喫茶', by: '甘茶（甘茶の音楽工房）', url: 'https://amachamusic.chagasi.com/' },
   { kind: 'sound', name: 'Interface Sounds', by: 'Kenney', license: 'CC0', url: 'https://kenney.nl/assets/interface-sounds' },
   { kind: 'sound', name: 'ぴょこ・その１', by: 'Tスタ', license: '利用規約', url: 'https://tnosite.com/staging-se/#comical_se', licenseUrl: 'https://tnosite.com/agreement/' },
+  { kind: 'sound', name: 'household shower', by: 'freesound_community（Pixabay）', license: 'Pixabay Content License', url: 'https://pixabay.com/sound-effects/household-shower-79059/', licenseUrl: 'https://pixabay.com/service/license-summary/' },
+  { kind: 'sound', name: '泡03・高音・単音', by: 'On-Jin ～音人～', license: '利用規約', url: 'https://on-jin.com/', licenseUrl: 'https://on-jin.com/kiyaku.php' },
 ];
 
 // 法的表示に並べる中身を、種類ごとにまとめて返す。
