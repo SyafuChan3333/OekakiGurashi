@@ -125,6 +125,13 @@ check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX)
   D.PEN_COMPANIONS.pop();
 }
 
+// 音量：以前の1つの音量は、効果音の音量に引き継ぐ。BGM はふつうの大きさから
+{
+  const old = S.newState(); delete old.bgmVolume; delete old.seVolume; old.volume = 0.3;
+  S.upgrade(old);
+  check('以前の音量は効果音に引き継ぎ、BGM はふつうの大きさ', old.seVolume === 0.3 && old.bgmVolume === 0.5 && !('volume' in old));
+}
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;

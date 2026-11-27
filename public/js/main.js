@@ -6,7 +6,7 @@ import { $, esc, icon, modal, closeModal, modalOpen, toast, say, onSay, placeBub
 import { drawFlow, openEditor } from './draw.js';
 import { runMinigame } from './minigames.js';
 import { installInputGuards } from './input.js';
-import { initAudio, setScene, play } from './audio.js';
+import { initAudio, setScene, applyVolume, play } from './audio.js';
 import { splashReady } from './splash.js';
 import { DEBUG } from './config.js';
 
@@ -34,7 +34,10 @@ async function init() {
   installInputGuards();
   state = S.upgrade(await S.load());
   if (state.started && !state.pet) state.started = false;
-  initAudio(() => ({ sound: state.sound, volume: state.volume }));
+  initAudio({
+    prefs: () => ({ sound: state.sound, bgmVolume: state.bgmVolume, seVolume: state.seVolume }),
+    quiet: () => document.body.classList.contains('editing'), // ミニゲーム・お絵かきの間は BGM を小さく
+  });
   world = new World($('#world'), { onPet: petTouched, onAnchor: placeBubbles });
   onSay((who, ms) => { if (who === 'pet') world.talk(ms); });
   $('#places').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) go(b.dataset.page); });
@@ -56,7 +59,7 @@ function go(p) {
   page = p;
   if (p === 'room') { world.showRoom(house(), S.currentPoster(state)?.image); setScene('room'); }
   if (p === 'cafe') { world.showCafe(state.cafe.level); world.setGuest(guestPic()); setScene('cafe'); syncCafe(); say('guest', esc(S.guest(state).ask), 0); }
-  if (p === 'shop') { world.showShop(); world.setGuest('assets/pen/cat7.png'); setScene('room'); say('guest', 'いらっしゃいませ〜', 2500); }
+  if (p === 'shop') { world.showShop(); world.setGuest('assets/pen/cat7.png'); setScene('shop'); say('guest', 'いらっしゃいませ〜', 2500); }
   if (p === 'house') { houseView = HOUSES.findIndex(h => h.id === state.house); world.showRoom(HOUSES[houseView], S.currentPoster(state)?.image); }
   if (p !== 'cafe' && p !== 'shop') say('guest', '');
   say('pet', '');
@@ -594,7 +597,8 @@ function importSave(onCancel) {
 function settings() {
   const view = () => modal(`<h2>設定</h2>
     <div class="set-row"><span>音</span><button class="btn" data-act="sound">${state.sound ? 'オン' : 'オフ'}</button></div>
-    <div class="set-row"><span>音量</span><input type="range" id="vol" min="0" max="1" step="0.1" value="${state.volume}"></div>
+    <div class="set-row"><span>BGM の音量</span><input type="range" id="vol-bgm" min="0" max="1" step="0.1" value="${state.bgmVolume}" aria-label="BGM の音量"></div>
+    <div class="set-row"><span>効果音の音量</span><input type="range" id="vol-se" min="0" max="1" step="0.1" value="${state.seVolume}" aria-label="効果音の音量"></div>
     <div class="set-row"><span>ハラハラモード<small>放っておくと病気やお別れが起きるかわりに、コインと仲よし度が${HARAHARA.multiplier}倍。切り替えは次の日から。</small></span><button class="btn" data-act="mode">${state.modeNext === 'harahara' ? 'オン' : 'オフ'}</button></div>
     <div class="list">
       <button class="btn wide" data-act="export">セーブを書き出す</button>
@@ -612,7 +616,7 @@ function settings() {
       <button class="btn wide" data-act="dbg-day">次の日にする</button>
     </div></details>` : ''}`, {
     onAct: async a => {
-      if (a === 'sound') { state.sound = !state.sound; setScene(page === 'cafe' ? 'cafe' : 'room'); await persist(); view(); }
+      if (a === 'sound') { state.sound = !state.sound; applyVolume(); await persist(); view(); }
       if (a === 'mode') { state.modeNext = state.modeNext === 'harahara' ? 'normal' : 'harahara'; await persist(); toast('次の日から切り替わります'); view(); }
       if (a === 'export') {
         // artifacts ではダウンロードができないので、テキストをコピーして保存してもらう
@@ -671,7 +675,12 @@ function legal(back) {
 
 function settingsInputs() {
   const root = $('#modal-root');
-  root.addEventListener('input', e => { if (e.target.id === 'vol') { state.volume = +e.target.value; setScene(page === 'cafe' ? 'cafe' : 'room'); persist(); } });
+  root.addEventListener('input', e => {
+    const key = { 'vol-bgm': 'bgmVolume', 'vol-se': 'seVolume' }[e.target.id];
+    if (!key) return;
+    state[key] = +e.target.value; applyVolume(); persist();
+  });
+  root.addEventListener('change', e => { if (e.target.id === 'vol-se') play('tap'); }); // 効果音の大きさを、離したときに聞かせる
 }
 
 // ---- 遊んでいる間だけ進む時計 ----

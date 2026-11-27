@@ -91,7 +91,7 @@ artifacts は外部スクリプトを CDN からしか読めない・ダウン�
 | `js/draw.js` | 自分で描く／魔法のペン、お絵かきエディタ |
 | `js/minigames.js` + `js/mg-*.js` | ミニゲームの枠と、各ミニゲーム |
 | `js/splash.js` | 起動画面の後半（タップしてはじめる。最初のタップで音を使えるようにする） |
-| `js/input.js` / `js/audio.js` / `js/ui.js` | 入力の共通処理 / 効果音（合成）/ アイコン・ポップアップ・吹き出し |
+| `js/input.js` / `js/audio.js` / `js/ui.js` | 入力の共通処理 / BGM と効果音（`assets/audio/`。読めなければ合成音）/ アイコン・ポップアップ・吹き出し |
 | `js/config.js` / `js/three.js` | 動作の切り替え / three.js の読み込み口（プレビューでは差し替え） |
 | `public/vendor/` | three.js（同梱版） |
 | `tests/` | 自動の確認（下）。`public/` の外 |

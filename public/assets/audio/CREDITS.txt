@@ -14,8 +14,3 @@ License: CC0 https://creativecommons.org/publicdomain/zero/1.0/
 click_003.ogg → tap.ogg
 confirmation_001.ogg → complete.ogg
 bong_001.ogg → happy.ogg
-
-Cat meow: "Meow of a Siamese cat" by freemaster2; CC0 1.0.
-https://commons.wikimedia.org/wiki/File:Meow_of_a_Siamese_cat_-_freemaster2.wav
-https://creativecommons.org/publicdomain/zero/1.0/
-Adapted: trimmed trailing silence, gentle fade and lower volume; encoded as MP3 and OGG.
