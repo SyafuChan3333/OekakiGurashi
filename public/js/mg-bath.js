@@ -130,7 +130,7 @@ export function bathGame({ petName, petImage }) {
         }
         if (id === 'lather') {
           // こすっている間だけ、泡の音をくり返す。手が止まったら止める
-          stopBubble ??= loopSe('bubble', -0.95, { vary: 0.15 });
+          stopBubble ??= loopSe('bubble', -0.62, { vary: 0.15 });
           clearTimeout(bubbleIdle);
           bubbleIdle = setTimeout(quietBubble, 250);
           // こする：左右に往復すると泡が増える
