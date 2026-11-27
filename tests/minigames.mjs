@@ -58,5 +58,21 @@ for (const [name, file, fn, args] of GAMES) {
     if (await page.locator('[data-mg="quit"]').count()) await page.click('[data-mg="quit"]');
   }
 }
+// 鳴らし続ける音：ドライヤーは止めるとアウトロ（区間のおわりから先）を鳴らす。泡は clip の長さで一定の間隔
+{
+  const res = await page.evaluate(async () => {
+    const A = await import('./js/audio.js');
+    const log = []; const o = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (t = 0, off = 0, len) { log.push({ dur: this.buffer?.duration, loop: this.loop, t, off, len }); return o.call(this, t, off, len); };
+    const stop = A.loopSe('dryer'); await new Promise(r => setTimeout(r, 400)); stop(); await new Promise(r => setTimeout(r, 100));
+    const b = A.loopSe('bubble'); await new Promise(r => setTimeout(r, 1100)); b();
+    AudioBufferSourceNode.prototype.start = o;
+    const dry = log.filter(x => x.dur > 7 && x.dur < 8), bub = log.filter(x => x.dur > 1 && x.dur < 1.3);
+    return { loopThenOutro: dry.length === 2 && dry[0].loop && !dry[1].loop && Math.abs(dry[1].off - 4.8) < 0.01 && dry[1].t - dry[0].t >= 1.19, bubble: bub.length >= 2 && bub.every(x => Math.abs(x.len - 0.15) < 0.01) && Math.abs(bub[1].t - bub[0].t - 0.5) < 0.01 };
+  });
+  check(r, '鳴らし続ける音：ドライヤーはイントロのあと、止めるとアウトロ', res.loopThenOutro);
+  check(r, '鳴らし続ける音：泡は短く切って0.5秒ごと', res.bubble);
+}
+
 await close();
 finish(r, errors);

@@ -36,6 +36,14 @@ https://pixabay.com/sound-effects/household-shower-79059/
 使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
 （2026-11-27、制作者が選んだ素材）
 
+■ 効果音：Hair Dryer 01（dryer.mp3。お風呂のブローの間）
+配布：Pixabay（投稿者：freesound_community）
+https://pixabay.com/sound-effects/film-special-effects-hair-dryer-01-97988/
+ライセンス（原文）：Pixabay Content License https://pixabay.com/service/license-summary/
+加工：モノラル 96kbps に変換
+使い方：ゲームの効果音として、ゲームのファイルと一緒に置いています。素材だけを取り出して配ったり売ったりはしません。
+（2026-11-27、制作者が選んだ素材）
+
 ■ 効果音：泡03・高音・単音（bubble.mp3。お風呂で泡立てている間、くり返し鳴らす）
 配布：On-Jin ～音人～（生活系音 ＞ 泡・あぶく）
 https://on-jin.com/

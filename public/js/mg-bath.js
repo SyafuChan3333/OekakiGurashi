@@ -101,10 +101,11 @@ export function bathGame({ petName, petImage }) {
     }
 
     // ---- 音：シャワーは指を当てている間、泡はこすっている間だけ鳴らす ----
-    let stopShower = null, stopBubble = null, bubbleIdle = 0;
+    let stopShower = null, stopBubble = null, stopDryer = null, bubbleIdle = 0;
     const quietShower = () => { stopShower?.(); stopShower = null; };
     const quietBubble = () => { stopBubble?.(); stopBubble = null; clearTimeout(bubbleIdle); };
-    const quietAll = () => { quietShower(); quietBubble(); };
+    // ドライヤーは、最初の水てきを飛ばしたらつけて、最後の水てきでスイッチを切る（止まる音まで鳴らす）
+    const quietAll = (now = false) => { quietShower(); quietBubble(); stopDryer?.({ now }); stopDryer = null; };
     const showerStep = () => !finished && !locked && STEPS[step]?.tool === 'shower';
 
     // ---- 操作 ----
@@ -116,7 +117,7 @@ export function bathGame({ petName, petImage }) {
         locked = false;
         last = pointer = pos(e);
         if (STEPS[step]?.id === 'blow') tapDrop(pointer);
-        if (showerStep()) stopShower ??= loopSe('shower', -0.35);
+        if (showerStep()) stopShower ??= loopSe('shower');
       },
       move: e => {
         if (finished || locked || !last) return;
@@ -130,7 +131,7 @@ export function bathGame({ petName, petImage }) {
         }
         if (id === 'lather') {
           // こすっている間だけ、泡の音をくり返す。手が止まったら止める
-          stopBubble ??= loopSe('bubble', -0.62, { vary: 0.15 });
+          stopBubble ??= loopSe('bubble');
           clearTimeout(bubbleIdle);
           bubbleIdle = setTimeout(quietBubble, 250);
           // こする：左右に往復すると泡が増える
@@ -150,6 +151,7 @@ export function bathGame({ petName, petImage }) {
       const i = drops.findIndex(d => Math.hypot(d.x - p.x, d.y - p.y) < d.r + 22);
       if (i < 0) return;
       const [d] = drops.splice(i, 1);
+      stopDryer ??= loopSe('dryer');
       flying.push({ ...d, vx: (d.x > SIZE / 2 ? 1 : -1) * (6 + Math.random() * 4), vy: -5, life: 1 });
       play('tap');
       advanceIfDone();
@@ -256,7 +258,7 @@ export function bathGame({ petName, petImage }) {
       root.appendChild(ok);
     }
     function close(result) {
-      quietAll();
+      quietAll(true); // やめたときは、止まる音を待たずにすぐ止める
       cancelAnimationFrame(raf);
       root.hidden = true; root.innerHTML = ''; root.onclick = null;
       document.body.classList.remove('editing');
