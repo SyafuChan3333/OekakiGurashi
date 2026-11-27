@@ -68,7 +68,12 @@ export async function load() {
   } catch {}
   return newState();
 }
+// 保存の結果：'ok'（IndexedDB に入った）・'fallback'（localStorage に入った）・'failed'（どちらにも入らなかった）
+// 開発用に、わざと失敗させられる（設定の開発用ボタン）
+let failForTest = false;
+export const setSaveFailForTest = on => (failForTest = on);
 export async function save(s) {
+  if (failForTest) return 'failed';
   try {
     dbp = dbp || idb();
     const db = await dbp;
@@ -77,9 +82,11 @@ export async function save(s) {
       t.objectStore('kv').put(structuredClone(s), 'state');
       t.oncomplete = res;
       t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error); // 容量が足りないときは abort になる
     });
+    return 'ok';
   } catch {
-    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify(s)); return 'fallback'; } catch { return 'failed'; }
   }
 }
 // 保存しているものをすべて消す（最初からやり直す）
