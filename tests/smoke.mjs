@@ -31,6 +31,7 @@ try {
   await page.click('[data-act="go"]'); await page.waitForSelector('#pet-card');
   check(r, '相棒を迎えると、ステータス欄が出る', await page.locator('#pet-card').count());
   check(r, '相棒が話している間は、3Dの相棒が口パク（揺れ）する', (await page.getAttribute('#world', 'data-talking')) === '1');
+  check(r, 'タップのあと、おへやの BGM を読み込む', await page.evaluate(() => performance.getEntriesByType('resource').some(e => e.name.includes('hinatabokko.mp3'))));
   check(r, 'ステータス欄は数値のバーではなく、気持ちのことば', !(await page.locator('#pet-card .bar').count()) && ['ごきげん', 'ふつう'].includes(await page.textContent('#pet-card .feel')));
   await page.screenshot({ path: OUT + 'smoke-room.png' });
 
@@ -87,6 +88,8 @@ try {
   // 設定 → 法的表示：コラボの相棒と、ライブラリ・フォントなどが並び、もどれる
   await page.click('#settings'); await wait(200);
   await page.screenshot({ path: OUT + 'smoke-settings.png' });
+  check(r, '設定に BGM と効果音の音量がある', (await page.locator('#vol-bgm').count()) && (await page.locator('#vol-se').count()));
+  await page.fill('#vol-bgm', '0.2'); await wait(100);
   await page.click('[data-act="legal"]'); await wait(200);
   const legal = await page.textContent('.legal');
   check(r, '法的表示にコラボの相棒・three.js・フォントが出る', ['龍惺ろたん', 'three.js', 'Yusei Magic', 'あなたのもの'].every(t => legal.includes(t)));

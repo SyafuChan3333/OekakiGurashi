@@ -57,7 +57,7 @@ export function chaseGame({ petName, petImage }) {
         found++; play('happy'); pop('いた！', SPOTS[i].x, SPOTS[i].bottom - SPOTS[i].h - 70);
         $('#mg-count').textContent = `${found}/${NEED}`; $('#mg-bar').style.width = `${Math.round(found / NEED * 100)}%`;
         state = found >= NEED ? 'home' : 'pop'; stateAt = performance.now();
-        if (state === 'home') { how('つかまえた！ いっしょに帰ろう'); play('meow'); }
+        if (state === 'home') { how('つかまえた！ いっしょに帰ろう'); play('pet'); }
         else how(found === 1 ? 'あっ、また逃げた！ もう一回さがそう' : 'あと1回！ よく見て');
       },
       move: () => {}, end: () => {},

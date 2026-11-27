@@ -30,8 +30,9 @@ export function newState() {
     },
     served: 0,
     memories: [],         // 手直し前の絵・お別れした子（スケッチブックに並ぶ。名前は互換のため memories のまま）
-    sound: true,
-    volume: 0.5,
+    sound: true,          // 音のオン・オフ（BGM と効果音の両方）
+    bgmVolume: 0.5,
+    seVolume: 0.7,
   };
 }
 
@@ -106,7 +107,8 @@ export function upgrade(s) {
     s.posters.unshift(old); s.poster = old.id;
   }
   s.bag ??= {};
-  delete s.food;
+  s.bgmVolume ??= 0.5; s.seVolume ??= s.volume ?? 0.7; // 以前は音量が1つだった
+  delete s.food; delete s.volume;
   return s;
 }
 
@@ -255,7 +257,7 @@ function farewell(s) {
   s.memories.push({ kind: 'farewell', name: s.pet.name, image: s.pet.image, self: s.pet.self, day: s.day, drawnAt: s.pet.drawnAt ?? null });
 }
 export function startOver(s) {
-  const keep = { shop: s.shop, bag: s.bag, coins: s.coins, house: s.house, owned: s.owned, cafe: s.cafe, memories: s.memories, served: s.served, sound: s.sound, volume: s.volume, day: s.day };
+  const keep = { shop: s.shop, bag: s.bag, coins: s.coins, house: s.house, owned: s.owned, cafe: s.cafe, memories: s.memories, served: s.served, sound: s.sound, bgmVolume: s.bgmVolume, seVolume: s.seVolume, day: s.day };
   Object.assign(s, newState(), keep);
 }
 

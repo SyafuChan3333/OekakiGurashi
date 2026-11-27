@@ -139,7 +139,7 @@ export function playGame(type, { petName, petImage, toy }) {
             jump += 1 / 30; pet.jy = Math.sin(Math.min(1, jump) * Math.PI) * 70;
             if (jump >= 1) { pet.jy = 0; phase = 'back'; }
           } else if (phase === 'fetch') {
-            if (walk(ball.x, 6)) { phase = 'back'; play('meow'); }
+            if (walk(ball.x, 6)) { phase = 'back'; play('pet'); }
           } else if (phase === 'back') {
             if (walk(PET_HOME, 5)) nextThrow();
           } else pet.hop = 0;
@@ -231,7 +231,7 @@ export function playGame(type, { petName, petImage, toy }) {
             const reach = Math.abs(feather.x - pet.x) < 180 && feather.y > 150;
             if (still === 10 && exc > 0.3 && reach) { // ぴたっと止まった
               jump = { t: 0, x0: pet.x, x1: Math.max(60, Math.min(SIZE - 60, feather.x)), top: feather.y + 60, big: exc >= 0.75 };
-              play('meow');
+              play('pet');
             }
             // ふだんは羽根のほうへ少しずつ寄っていく
             const dx = feather.x - pet.x; pet.dir = Math.sign(dx) || pet.dir;
@@ -291,7 +291,7 @@ export function playGame(type, { petName, petImage, toy }) {
             if (!drag) return;
             drag = null;
             if (Math.abs(plush.x - PET.x) < 90) { // わたせた
-              phase = 'hug'; play('meow'); t0 = performance.now();
+              phase = 'hug'; play('pet'); t0 = performance.now();
               how('ハートがいちばん大きいときに、相棒をタップ（4回）'); setCount(`0/${NEED}`);
             } else plush = { ...HOME };
           },
