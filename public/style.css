@@ -156,6 +156,12 @@ img { -webkit-user-drag: none; }
 .field input { border: 2.5px solid var(--ink); border-radius: 12px; padding: 10px 12px; font-size: 16px; background: #fff; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; }
 .set-row small { display: block; font-size: 12px; color: var(--sub); margin-top: 2px; }
+/* セーブできないとき（設計書 2.5） */
+#settings.warn { position: relative; }
+#settings.warn::after { content: ''; position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: #d9573b; border: 2px solid var(--ink); }
+.save-warn { margin: 0 0 10px; padding: 8px 10px; border: 2px solid #d9573b; border-radius: 10px; background: #fbe3d6; font-size: 14px; font-weight: 700; line-height: 1.5; }
+.tips { margin: 0 0 10px; padding-left: 1.2em; line-height: 1.6; font-size: 14px; }
+.tips li + li { margin-top: 4px; }
 /* 法的表示 */
 .legal { display: flex; flex-direction: column; gap: 14px; overflow-wrap: anywhere; }
 .legal p { margin: 0; line-height: 1.6; }

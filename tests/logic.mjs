@@ -132,6 +132,13 @@ check(`商品は${S.SHOP_MAX}個でいっぱい`, mf.shop.length === S.SHOP_MAX)
   check('以前の音量は効果音に引き継ぎ、BGM はふつうの大きさ', old.seVolume === 0.3 && old.bgmVolume === 0.5 && !('volume' in old));
 }
 
+// セーブの結果：わざと失敗させると 'failed' を返す
+{
+  S.setSaveFailForTest(true);
+  check('セーブできなかったら failed を返す', (await S.save(S.newState())) === 'failed');
+  S.setSaveFailForTest(false);
+}
+
 const ng = results.filter(r => !r).length;
 console.log(ng ? `\n${ng} 件 NG` : '\nすべて ok');
 process.exitCode = ng ? 1 : 0;
