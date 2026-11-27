@@ -144,7 +144,7 @@ export function bathGame({ petName, petImage }) {
         last = p;
         advanceIfDone();
       },
-      end: () => { last = null; quietAll(); },
+      end: () => { last = null; quietShower(); quietBubble(); }, // ドライヤーは指を離しても止めない（水てきをぜんぶ飛ばすまで）
     });
     function tapDrop(p) {
       if (locked) return;
