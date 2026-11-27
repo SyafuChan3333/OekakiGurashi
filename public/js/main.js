@@ -14,7 +14,32 @@ let state, world, page = 'room', houseView = 0;
 const personality = () => PERSONALITIES.find(p => p.id === state.pet?.personality) || PERSONALITIES[0];
 const house = () => HOUSES.find(h => h.id === state.house) || HOUSES[0];
 const isPhone = () => matchMedia('(max-width: 640px)').matches;
-const persist = () => S.save(state);
+// セーブ：失敗したら、最初の1回だけ短く知らせ、失敗している間は設定ボタンに印を付ける（設計書 2.5）
+let saveFailing = false;
+async function persist(notify = true) {
+  const failed = (await S.save(state)) === 'failed';
+  if (failed && !saveFailing && notify) toast('セーブできませんでした');
+  if (failed !== saveFailing) { saveFailing = failed; $('#settings').classList.toggle('warn', failed); }
+  return !failed;
+}
+// 起動したときに一度セーブしてみて、できなければ、できることを添えてしっかり知らせる
+async function checkSave() {
+  if (await persist(false)) return; // 知らせはこのあとのポップアップで出すので、短い知らせは出さない
+  await new Promise(done => modal(`<h2>ゲームの進み具合を保存できません</h2>
+    <p class="note">このままでも遊べますが、ページを閉じると、ここまでの続きは残りません。次のことを試してみてください。</p>
+    <ul class="tips">
+      <li>スマホやパソコンの空き容量を増やす（いらない写真やアプリを消す）</li>
+      <li>プライベートブラウズ（シークレットモード）をやめて、ふつうの画面で開く</li>
+      <li>ブラウザの設定で、このサイトのデータの保存を許可する</li>
+      <li>ほかのブラウザで開く</li>
+    </ul>
+    <p class="note">大事なところまで遊んだら、設定の「セーブを書き出す」で手元に残せます。</p>
+    ${state.started ? '<button class="btn wide" data-act="export">いまのセーブを書き出す</button>' : ''}
+    <button class="btn primary wide" data-act="ok">このまま遊ぶ</button>`, {
+    // 書き出しは、続きから遊ぶ人だけ（はじめての人は、まだ残すものがない）
+    onAct: a => { if (a === 'export') exportSave(); else closeModal(); done(); },
+  }));
+}
 
 // ---- 相棒のセリフ（短く、くだけた話し言葉） ----
 const LINES = {
@@ -51,6 +76,7 @@ async function init() {
   settingsInputs();
   go('room');
   await splashReady(state.started ? state.pet?.image : null);
+  await checkSave();
   setInterval(loop, 1000); // 時間が進むのは、タップしてはじめてから
   if (!state.started) startFlow();
 }
@@ -600,6 +626,7 @@ function settings() {
     <div class="set-row"><span>BGM の音量</span><input type="range" id="vol-bgm" min="0" max="1" step="0.1" value="${state.bgmVolume}" aria-label="BGM の音量"></div>
     <div class="set-row"><span>効果音の音量</span><input type="range" id="vol-se" min="0" max="1" step="0.1" value="${state.seVolume}" aria-label="効果音の音量"></div>
     <div class="set-row"><span>ハラハラモード<small>放っておくと病気やお別れが起きるかわりに、コインと仲よし度が${HARAHARA.multiplier}倍。切り替えは次の日から。</small></span><button class="btn" data-act="mode">${state.modeNext === 'harahara' ? 'オン' : 'オフ'}</button></div>
+    ${saveFailing ? '<p class="save-warn">いま、セーブできていません。「セーブを書き出す」で手元に残せます。</p>' : ''}
     <div class="list">
       <button class="btn wide" data-act="export">セーブを書き出す</button>
       <button class="btn wide" data-act="import">セーブを読み込む</button>
@@ -614,24 +641,21 @@ function settings() {
       <button class="btn wide" data-act="dbg-lonely">さみしい状態にする（ハラハラモードではすねる）</button>
       <button class="btn wide" data-act="dbg-coins">コイン ＋1000</button>
       <button class="btn wide" data-act="dbg-day">次の日にする</button>
+      <button class="btn wide" data-act="dbg-savefail">${saveFailing ? 'セーブの失敗をやめる' : 'セーブの失敗をためす'}</button>
     </div></details>` : ''}`, {
     onAct: async a => {
       if (a === 'sound') { state.sound = !state.sound; applyVolume(); await persist(); view(); }
       if (a === 'mode') { state.modeNext = state.modeNext === 'harahara' ? 'normal' : 'harahara'; await persist(); toast('次の日から切り替わります'); view(); }
-      if (a === 'export') {
-        // artifacts ではダウンロードができないので、テキストをコピーして保存してもらう
-        const text = JSON.stringify({ format: 'oekaki-kurashi', state });
-        modal(`<h2>セーブを書き出す</h2><p class="note">下の文字をすべてコピーして、メモなどに保存してください。読み込むときは「セーブを読み込む」に貼りつけます。</p><textarea id="save-text" class="save-text" readonly>${esc(text)}</textarea><button class="btn primary wide" data-act="copy">コピーする</button>`, {
-          onAct: async b => {
-            if (b !== 'copy') return;
-            try { await navigator.clipboard.writeText(text); toast('コピーしました'); }
-            catch { const t = $('#save-text'); t.focus(); t.select(); toast('選択しました。手動でコピーしてください'); }
-          },
-        });
-      }
+      if (a === 'export') exportSave();
       if (a === 'import') importSave();
       if (a === 'legal') legal(view);
       // 開発用：ハラハラモードの出来事などを、待たずに試す
+      if (a === 'dbg-savefail') {
+        const on = !$('#settings').classList.contains('warn');
+        S.setSaveFailForTest(on);
+        if (on) { closeModal(); return checkSave(); }
+        await persist(); toast('セーブできるように戻しました'); return view();
+      }
       if (a.startsWith('dbg-')) {
         if (!state.started || !state.pet) return toast('相棒を迎えてから使えます');
         const c = state.care;
@@ -671,6 +695,18 @@ function legal(back) {
       ${legalSections().map(sec => `<section><h3>${esc(sec.title)}</h3><ul>${sec.items.map(item).join('')}</ul></section>`).join('')}
     </div>
     <button class="btn wide" data-act="back">もどる</button>`, { onAct: a => { if (a === 'back') back(); } });
+}
+
+// セーブを文字で書き出す（artifacts ではダウンロードができないので、テキストをコピーして保存してもらう）
+function exportSave() {
+  const text = JSON.stringify({ format: 'oekaki-kurashi', state });
+  modal(`<h2>セーブを書き出す</h2><p class="note">下の文字をすべてコピーして、メモなどに保存してください。読み込むときは「セーブを読み込む」に貼りつけます。</p><textarea id="save-text" class="save-text" readonly>${esc(text)}</textarea><button class="btn primary wide" data-act="copy">コピーする</button>`, {
+    onAct: async b => {
+      if (b !== 'copy') return;
+      try { await navigator.clipboard.writeText(text); toast('コピーしました'); }
+      catch { const t = $('#save-text'); t.focus(); t.select(); toast('選択しました。手動でコピーしてください'); }
+    },
+  });
 }
 
 function settingsInputs() {

@@ -184,6 +184,19 @@ try {
   check(r, '3Dの相棒も「しょんぼり」になる', (await page.getAttribute('#world', 'data-feeling')) === 'down');
   await page.screenshot({ path: OUT + 'smoke-feeling.png' });
 
+  // セーブできないとき：起動時と同じ知らせ（できることの一覧）と、設定ボタンの印。戻すと印が消える（設計書 2.5）
+  await page.click('#settings'); await wait(200);
+  await page.click('details.debug summary'); await page.click('[data-act="dbg-savefail"]'); await wait(400);
+  check(r, 'セーブできないと、できることを添えて知らせる', (await page.textContent('.sheet')).includes('保存できません') && (await page.locator('.sheet .tips li').count()) >= 3);
+  await page.screenshot({ path: OUT + 'smoke-savefail.png' });
+  await page.click('[data-act="ok"]'); await wait(200);
+  check(r, 'セーブできない間は、設定ボタンに印', await page.locator('#settings.warn').count());
+  await page.click('#settings'); await wait(200);
+  check(r, '設定に「セーブできていません」と出る', await page.locator('.save-warn').count());
+  await page.click('details.debug summary'); await page.click('[data-act="dbg-savefail"]'); await wait(400);
+  check(r, 'セーブできるようになると印が消える', !(await page.locator('#settings.warn').count()));
+  await page.click('.sheet-close');
+
   // 開発用：お別れの直前にする（知らせの残り秒数が数秒になる）
   await page.click('#settings'); await wait(200);
   await page.click('details.debug summary'); await page.click('[data-act="dbg-gone"]'); await wait(400);
